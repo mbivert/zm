@@ -1,0 +1,18 @@
+{
+	"extensionName" : {
+		"message"     : "Zhongmu",
+		"description" : "Extension name"
+	},
+	"extensionDescription" : {
+		"message"     : "Decompose Chinese characters for in-depth analysis",
+		"description" : "Extension description"
+	},
+	"menuEnableReading" : {
+		"message"     : "Enable reading mode",
+		"description" : "Enable reading mode, automatic text slicing"
+	},
+	"menuDisableReading" : {
+		"message"     : "Disable reading mode",
+		"description" : "Disable reading mode, automatic text slicing"
+	}
+}

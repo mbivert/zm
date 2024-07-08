@@ -1,0 +1,232 @@
+/*
+ * NOTE: this used to contain grid-related CSS rules so as to
+ * be able to export some of the code to be used as a library.
+ *
+ * This aspect hasn't been maintained (yet).
+ */
+
+.zhongmu-vcut {
+	display               : grid;
+	grid-template-columns : 1fr 4fr;
+}
+
+.zhongmu-tab-items.zhongmu-with-after:after {
+	vertical-align : text-top;
+	font-size      : xx-small;
+	content        : attr(zhongmu-current-item) '/' attr(zhongmu-items-count);
+}
+
+.zhongmu-word {
+	border-right : 1px solid #a2a9b1;
+	border-top   : 1px solid #a2a9b1;
+}
+
+.zhongmu-word-text {
+	font-size    : 3em;
+	text-align   : center;
+	/* Always display both the text and its <sup> on the same line */
+	white-space  : nowrap;
+}
+
+/* NOTE: also acts as a visual separator between text and imgs */
+.zhongmu-word-text-sup {
+	vertical-align : top;
+	font-size      : 0.2em; /* relative to .zhongmu-word-text's font-size */
+}
+
+.zhongmu-hcut {
+	border-top   : 1px solid #a2a9b1;
+}
+
+.zhongmu-descr {
+	padding-bottom : 5px;
+	margin-bottom  : 5px;
+	display        : grid;
+	grid-template-columns : 1fr;
+	grid-template-rows    : auto;
+}
+
+.zhongmu-descr > .zhongmu-descr-header    {
+	align-items    : center;
+	justify-items  : center;
+	display        : grid;
+	grid-auto-flow : column;
+}
+
+.zhongmu-descr > .zhongmu-descr-content {
+	border-top : 1px solid #bfbfbf;
+}
+
+.zhongmu-strokes-img {
+	max-height     : 5em;
+	max-width      : 100%;
+	display        : block;
+}
+
+/*
+ * Add an extra bottom border to separate navigateable
+ * dictionaries' words with potentially opened decomposition
+ * of the upper word.
+ *
+ * There's just a little bit of space by default to distinguish
+ * them, which isn't visually clear; this is better but perhaps
+ * still too subtle.
+ */
+.zhongmu-navigateable + .zhongmu-vcuts {
+	border-bottom : 1px solid #bfbfbf;
+}
+
+.zhongmu-hl-cw { background-color : Gold;                     } /* current word           */
+.zhongmu-hl-cp { background-color : PaleGoldenrod !important; } /* current piece          */
+.zhongmu-ok-ep { background-color : #cff4f9;                  } /* even pieces            */
+.zhongmu-ok-op { background-color : #c2ffb6;                  } /* odd pieces             */
+.zhongmu-ko-ep { background-color : #ffefd5;                  } /* even pieces (mismatch) */
+.zhongmu-ko-op { background-color : #fdd7c1;                  } /* odd pieces  (mismatch) */
+
+
+/*
+ * Special styling for zhongmu example.
+ */
+
+.zhongmu-single-word, .zhongmu-single-nav {
+	margin-left  : 10%;
+	margin-right : 10%;
+	padding      : 0.5em;
+	border       : 1px dotted;
+}
+
+.zhongmu-single-nav > div:first-child {
+	text-align: center
+}
+
+.zhongmu-sub-single-nav {
+/*	border-bottom : 1px solid #bfbfbf; */
+	border-left   : 1px solid #bfbfbf;
+	padding-bottom : 0.2em;
+}
+
+.zhongmu-nav-btns {
+	text-align : center;
+	margin-top : 0.3em;
+}
+
+.kao-stack         { border-bottom : 3px dotted darkmagenta; }
+.kao-word          { border-bottom : 3px dotted blue;        }
+.kao-ancient-forms { border-bottom : 3px dotted limegreen;   }
+.kao-decomps       { border-bottom : 3px dotted red;         }
+.kao-tabs          { border-bottom : 3px dotted orange;      }
+.kao-defword       { border-bottom : 3px dotted fuchsia;     }
+.kao-arrows        { border-bottom : 3px dotted deepskyblue; }
+.kao-defword-top   { border-bottom : 3px dotted cyan;        }
+.kao-dict-stack    { border-bottom : 3px dotted #ffb59a;     }
+.kao-dict-text     { border-bottom : 3px dotted turquoise;   }
+
+#kao .zhongmu-stack {
+	 border        : 3px dotted darkmagenta;
+	 margin-bottom : 0.2em;
+}
+
+#kao .zhongmu-vcuts .zhongmu-word-text {
+	border       : 3px dotted blue;
+	padding-top  : 0.2em; /* for the defword-top */
+	margin-right : 0.2em;
+	margin-top   : 0.2em;
+	margin-left  : 0.2em;
+}
+
+#kao .zhongmu-vcuts .zhongmu-word-text + span {
+	display       : block;
+	border        : 3px dotted limegreen;
+	margin-top    : 1em;
+	margin-bottom : 1em;
+	margin-left   : 0.5em;
+	margin-right  : 0.5em;
+}
+
+#kao .zhongmu-vcuts .zhongmu-descr-header > :first-child {
+	border : 3px dotted red;
+}
+
+#kao .zhongmu-vcuts .zhongmu-descr-header {
+	margin-top    : 0.2em;
+	margin-bottom : 0.2em;
+}
+
+#kao .zhongmu-vcuts .zhongmu-descr-header > :nth-child(n+2) {
+	border : 3px dotted orange;
+}
+
+#kao .zhongmu-def-word {
+	border : 3px dotted fuchsia;
+}
+
+#kao .zhongmu-def-word-top {
+	border     : 3px dotted cyan;
+}
+
+#kao .zhongmu-vcuts .zhongmu-nav-btns {
+	margin-top : 0.2em;
+	border     : 3px dotted deepskyblue;
+}
+
+#kao .zhongmu-vcuts [zhongmu-tab-data="說文"] > div:nth-child(2) {
+	margin-top : 0.2em;
+	border : 3px dotted #ffb59a;
+}
+
+#kao .zhongmu-vcuts [zhongmu-tab-data="說文"] > div:nth-child(3) {
+	border     : 3px dotted turquoise;
+	margin-bottom : 0.2em;
+	margin-top : 0.2em;
+}
+
+#kao .zhongmu-vcut .zhongmu-stack {
+	 border        : 3px dotted darkmagenta;
+	 margin-bottom : 0.2em;
+}
+
+.zhongmu-modal {
+	position         : fixed;
+	z-index          : 10;
+	left             : 0;
+	top              : 0;
+	width            : 100%;
+	height           : 100%;
+	overflow         : auto;
+	background-color : rgba(0, 0, 0, 0.4);
+}
+
+.zhongmu-modal-content {
+	display          : block;
+	background-color : #ffe6b8;
+	margin           : 15% auto;
+	padding          : 1em;
+	width            : 80%;
+	border-radius    : 10px;
+}
+
+.zhongmu-modal-close-btn, .zhongmu-help-btn {
+	/* This is a <button>, but we want a lighter visual */
+	all         : unset;
+	cursor      : pointer;
+	float       : right;
+	font-weight : bold;
+}
+
+.zhongmu-modal-close-btn {
+	color       : #aaa;
+}
+
+/*
+ * red is too visible, #aaa not enough;
+ * this feels like a nice middle-ground.
+ */
+.zhongmu-help-btn {
+	color       : blue;
+}
+
+/* fixed-size makes it better as a button */
+.zhongmu-tabitms-decomp {
+	font-family : monospace;
+	font-size   : 1.3em;
+}

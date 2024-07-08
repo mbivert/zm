@@ -1,0 +1,7 @@
+site-ready/*
+site/base/data/big5/*.gz
+site/base/data/dict/*.gz
+site/base/data/decomp/*.gz
+site/base/full.js
++Buffer
+nohup.out

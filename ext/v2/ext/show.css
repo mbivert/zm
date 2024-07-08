@@ -1,0 +1,23 @@
+/*
+ * CSS for component included in ../lib/libshow.js.
+ */
+
+.zhongmu-ext-vcut {
+	display                : grid;
+	grid-template-columns  : 1fr 4fr;
+}
+
+.zhongmu-ext-word {
+	font-size    : 3em;
+	border-right : 1px solid #a2a9b1;
+	border-top   : 1px solid #a2a9b1;
+}
+
+.zhongmu-ext-hcut {
+	border-top   : 1px solid #a2a9b1;
+}
+
+.zhongmu-ext-descr {
+	padding-bottom : 5px;
+	margin-bottom  : 5px;
+}

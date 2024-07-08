@@ -1,0 +1,358 @@
+/*
+ * Generic decorations.
+ */
+
+/* Centered images */
+img {
+	display : block;
+	margin  : auto;
+}
+
+/*
+ * Overall page display.
+ *
+ * Pages are structured as such:
+ *
+ *	<body>
+ *		<div id="content">
+ *			<div id="header">...</div>
+ *			<div id="main">...</div>
+ *			<div id="footer">...</div>
+ *		</div>
+ *	</body>
+ */
+
+/* Delegate scrolling to body's elements */
+html, body {
+	height   : 100%;
+	overflow : hidden;
+}
+
+#content {
+	height                : 100%;
+	overflow              : hidden;
+	display               : grid;
+	grid-template-columns : 1fr;
+	grid-template-rows    : auto 1fr auto;
+}
+
+body {
+	background-color : #ffeed4e0;
+	width            : 80%;
+	text-align       : justify;
+	margin-left      : 10%;
+	margin-right     : 10%;
+}
+
+@media only screen and (max-width: 700px) {
+	body {
+		width            : 90%;
+		margin-left      : 5%;
+		margin-right     : 5%;
+	}
+}
+
+/*
+ * Menu.
+ */
+
+/* Remove styling for a #menu's lists */
+#menu ul {
+	list-style-type   : none;
+	margin            : 0;
+	padding           : 0;
+}
+
+#menu {
+	font-size   : 1.5em;
+	text-shadow : 4px 4px 4px #aaa;
+}
+
+#menu li {
+	display         : block;
+	position        : relative;
+}
+
+#menu a {
+	text-align      : center;
+	display         : block;
+	width           : 100%;
+	color           : darkblue;
+	text-decoration : none;
+}
+
+#menu > ul {
+	display           : grid;
+	grid-auto-flow    : column;
+	grid-auto-columns : 1fr;
+
+	border-top        : 1px solid black;
+	border-bottom     : 1px solid black;
+
+	padding-top       : 3px;
+	padding-bottom    : 3px;
+}
+
+@media only screen and (max-width: 800px) {
+	#menu > ul {
+		grid-auto-flow : row;
+	}
+}
+
+#menu > ul > li:hover {
+	background-color : #fbd7ad;
+}
+
+/*
+ * TODO: The two following allows two-layers menu.
+ * It works but could be visually refined.
+ */
+#menu > ul > li > ul {
+	display          : none;
+	position         : absolute;
+	background-color : #ffe6b8;
+	left             : 0;
+	right            : 0;
+	width            : 100%;
+	border-radius    : 0em 0em 0.5em 0.5em;
+}
+#menu > ul > li:hover > ul, #menu > ul > li > ul:hover {
+	display          : block;
+	width            : auto;
+}
+
+#important {
+	font-style    : italic;
+	text-align    : center;
+	margin-top    : 1em;
+	margin-bottom : 1em;
+}
+
+#footer {
+	width      : 100%;
+	text-align : center;
+	font-size  : smaller;
+}
+
+#loading {
+	/* Cover the whole screen */
+	position         : fixed;
+	top              : 0px;
+	left             : 0px;
+	width            : 100%;
+	height           : 100%;
+	background-color : rgba(0, 0, 0, 0.4);
+	font-size        : 5em;
+
+	/* above enough */
+	z-index          : 9001;
+
+	/* center horizontally/vertically */
+	display          : flex;
+	justify-content  : center;
+	align-items      : center;
+}
+
+/* https://loading.io/css/, CC0 (public domain) */
+#loading-wheel {
+	display : inline-block;
+	width   : 80px;
+	height  : 80px;
+}
+
+#loading-wheel:after {
+	content       : " ";
+	display       : block;
+	width         : 64px;
+	height        : 64px;
+	margin        : 8px;
+	border-radius : 50%;
+	border        : 6px solid #fff;
+	border-color  : #fff transparent #fff transparent;
+	animation     : loading-wheel 1.2s linear infinite;
+}
+
+@keyframes loading-wheel {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+
+/*
+ * Table of content, used for both trbook.html and book.html
+ */
+
+.zhongmu-toc-title {
+	text-align : center;
+	display    : block;
+}
+
+/* Remove styling for ToC's lists */
+#toc ul {
+	list-style-type   : none;
+}
+
+#toc {
+	position         : fixed;
+	z-index          : 10;
+	left             : 0;
+	top              : 0;
+	width            : 100%;
+	height           : 100%;
+	overflow         : auto;
+	background-color : rgba(0, 0, 0, 0.4);
+}
+
+#toc .zhongmu-toc-title {
+	text-align : center;
+	display    : block;
+}
+
+#toc .zhongmu-toc-content {
+	display          : block;
+	background-color : #ffe6b8;
+	margin           : 15% auto;
+	padding          : 1em;
+	width            : 80%;
+	border-radius    : 10px;
+}
+
+#toc .zhongmu-toc-close {
+	color       : #aaa;
+	float       : right;
+	font-weight : bold;
+}
+
+/*
+ * about.html, books.html, help.html
+ */
+
+/* TODO: there's some ad-hock styling to remove
+the main constraint on html/body regarding scrolling.
+*/
+
+/*
+ * trbook.html
+ */
+
+.main-trbook {
+	height                : 100%;
+	overflow              : hidden;
+	display               : grid;
+	grid-template-columns : repeat(6, 1fr);
+	grid-template-rows    : auto auto 1fr;
+	row-gap               : 0.5em;
+	column-gap            : 0.5em;
+}
+
+.main-trbook #title,
+.main-trbook #section    { grid-column : span 3;     }
+.main-trbook #cn         { grid-column : span 2;     }
+.main-trbook #nav        { grid-column : 3 / span 2; }
+.main-trbook #font-save,
+.main-trbook #src,
+.main-trbook #dec,
+.main-trbook #tr         { grid-column : span 2;     }
+
+.main-trbook #title,
+.main-trbook #section,
+.main-trbook #nav-btns,
+.main-trbook #font-save { align-self   : center; }
+
+.main-trbook #title,
+.main-trbook #section   { justify-self : center; }
+.main-trbook #nav       { justify-self : center; }
+.main-trbook #font-save { justify-self : right;  }
+
+.main-trbook #title   { font-size : 3em; }
+.main-trbook #section { font-size : 2em; }
+
+.main-trbook #src,
+.main-trbook #dec,
+.main-trbook #tr   { overflow-y : scroll; height : 100% }
+
+/*
+ * book.html
+ *
+ * mostly copy/pasta from trbook.html
+ */
+
+.main-book {
+	height                : 100%;
+	overflow              : hidden;
+	display               : grid;
+	grid-template-columns : repeat(6, 1fr);
+	grid-template-rows    : auto auto 1fr;
+	row-gap               : 0.5em;
+	column-gap            : 0.5em;
+}
+
+.main-book #title,
+.main-book #section    { grid-column : span 3;     }
+.main-book #cn         { grid-column : span 2;     }
+.main-book #nav        { grid-column : 3 / span 2; }
+.main-book #font-save  { grid-column : 5 / span 2; }
+.main-book #src,
+.main-book #dec        { grid-column : span 3;     }
+
+.main-book #title,
+.main-book #section,
+.main-book #nav-btns,
+.main-book #font-save { align-self   : center; }
+
+.main-book #title,
+.main-book #section   { justify-self : center; }
+.main-book #nav       { justify-self : center; }
+.main-book #font-save { justify-self : right;  }
+
+.main-book #title   { font-size : 3em; }
+.main-book #section { font-size : 2em; }
+
+.main-book #src,
+.main-book #dec { overflow-y : scroll; height : 100% }
+
+/*
+ * index.html
+ */
+
+.main-index #input {
+	width : 100%;
+}
+
+.main-index {
+	height                : 100%;
+	overflow              : hidden;
+	display               : grid;
+	grid-template-columns : repeat(6, 1fr);
+	grid-template-rows    : 1fr auto 3fr;
+	row-gap               : 0.5em;
+	column-gap            : 0.5em;
+}
+
+.main-index #input             { grid-column : span 3; }
+.main-index #results           { grid-column : span 3; }
+.main-index #submit-search     { grid-column : span 3; }
+.main-index #nav               { grid-column : span 3; }
+.main-index #inline-help       { grid-column : span 6; }
+.main-index #src               { grid-column : span 3; }
+.main-index #dec               { grid-column : span 3; }
+
+.main-index #results,
+.main-index #inline-help,
+.main-index #src,
+.main-index #dec { overflow-y : scroll; height : 100% }
+
+/* Remove horizontal scrolling in search resluts. */
+.main-index #results {
+	overflow-x : hidden;
+	max-width  : 100%;
+}
+
+.zhongmu-search-defs {
+	margin-left : 5px;
+	color       : darkslategray;
+}

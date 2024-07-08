@@ -1,0 +1,32 @@
+{
+	"manifest_version" : 2,
+	"name"             : "__MSG_extensionName__",
+	"version"          : "1.0",
+	"description"      : "__MSG_extensionDescription__",
+	"homepage_url"     : "http://TODO.com",
+	"default_locale"   : "en",
+
+/*	"icons"            : {
+		"48": "TODO"
+	},*/
+
+	"permissions" : [ "activeTab", "contextMenus", "storage" ],
+
+	"content_scripts": [
+		{
+			"matches" : [ "*://*/*"               ],
+			"css"     : [ "show.css", "popup.css" ],
+			"js"      : [ "front.js"              ]
+		}
+	],
+
+	"background": {
+		"scripts"    : [ "back.js" ],
+		"persistent" : false
+	},
+
+	"web_accessible_resources": [
+		"tdict.js",
+		"decomp.js"
+	]
+}

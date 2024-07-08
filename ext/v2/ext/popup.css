@@ -1,0 +1,40 @@
+#zhongmu-popup {
+	position:         absolute;
+	z-index:          1002;
+	box-shadow:       rgba(0, 0, 0, 0.2) 0px 1px 3px;
+/*	padding:          YPADDINGpx XPADDINGpx YPADDINGpx XPADDINGpx;*/
+	border-radius:    2px;
+	background-color: white;
+	max-width:        66%;
+	max-height:       66%;
+
+	/*
+	 * NOTE: scrollbar is on the left by default, not perfect
+	 * but will do for now.
+	 */
+	overflow-y:       auto;
+	overflow-x:       hidden;
+}
+
+#zhongmu-bar {
+	width         : 100%;
+	border-bottom : solid 1px;
+}
+
+#zhongmu-stack {
+	min-height : 1em
+}
+
+#zhongmu-mover {
+	display    : inline-block;
+	text-align : center;
+	width      : 100%;
+}
+
+.zhongmu-closer {
+	float    : right;
+	position : absolute;
+	top      : 0;
+	right    : 0;
+
+}

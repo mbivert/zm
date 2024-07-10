@@ -3,12 +3,19 @@ import * as Links    from '../modules/links.js'
 /**
  * Local utf8 to Big5 converter, to avoid relying on Data.
  *
+ * TODO: we can (should) probably rely on Data.utf82big5()
+ * anyway (add an extra parameter to tweak the u2b table on
+ * the fly).
+ *
  * @type{(arg0 : string) => string}
  */
-function u2b(x) {
+function u2b(c) {
+	var x = c.codePointAt(0);
+	if (!x) return "";
+	var y = "0x"+x.toString(16).toUpperCase();
 	/** @type{Object<string, string>} */
 	var h = { "0x5B78" : "0xBEC7" };
-	return h["0x"+x] || ""
+	return h[y] || "";
 }
 
 /**

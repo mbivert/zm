@@ -496,6 +496,8 @@ function tokenize(s, td) {
 }
 
 /**
+ * TODO: rename to emphasize markdown
+ *
  * @param{string} s - string to parse as markdown
  * @param{TreeDicts} [td] - used instead of tdicts if specified
  * @returns{Array.<TokedChunk>} - array of tokenized chunks

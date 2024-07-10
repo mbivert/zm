@@ -12,8 +12,12 @@ import * as View     from "../../modules/view.js";
 import { SVarType, ChunkType } from "../../modules/enums.js";
 import { MoveDir, MoveWhat   } from "../../modules/enums.js";
 
+/**
+ * @param{WithMove} S
+ * @returns{BuildableHTMLElement}
+ */
 function mktitle(S) {
-	var p = document.createElement("span");
+	var p = Dom.mkbuildable("span");
 
 	function build() {
 		for (var i = 0; i < S.move.cn(); i++)
@@ -30,8 +34,12 @@ function mktitle(S) {
 	return p;
 }
 
+/**
+ * @param{WithMove} S
+ * @returns{BuildableHTMLElement}
+ */
 function mksection(S) {
-	var p = document.createElement("span");
+	var p = Dom.mkbuildable("span");
 
 	function build() {
 		for (var i = S.move.ic; i >= 0; i--)
@@ -46,8 +54,12 @@ function mksection(S) {
 	return p;
 }
 
+/**
+ * @param{WithMove} S
+ * @returns{BuildableHTMLElement}
+ */
 function mkcn(S) {
-	var p = document.createElement("span");
+	var p = Dom.mkbuildable("span");
 
 	function build() { p.innerText = "Chunk: "+(S.move.ic+1)+"/"+S.move.cn(); }
 	p.build = build;
@@ -55,8 +67,12 @@ function mkcn(S) {
 	return p;
 }
 
+/**
+ * @param{WithMove} S
+ * @returns{BuildableHTMLElement}
+ */
 function mktoc(S) {
-	var p = document.createElement("span");
+	var p = Dom.mkbuildable("span");
 
 	function build() {
 		p.appendChild(Dom.mkspan("目錄", Classes.toctitle));
@@ -68,10 +84,22 @@ function mktoc(S) {
 	return p;
 }
 
+/**
+ * @param{BookState} S
+ * @param{MMovableBuildableHTMLElement} p
+ * @param{HTMLElement} psrc
+ * @param{HTMLElement} ptoc
+ * @param{Array<BuildableHTMLElement>} qs
+ * @param{Array.<SVarDescr>} svars
+ * @param{string} navtype
+ */
 function setup(S, p, psrc, ptoc, qs, navtype, svars) {
 	View.setupwithnav(p, psrc, S, navtype);
 
-	function movehandler(_) {
+	/**
+	 * @param{Event} [e]
+	 */
+	function movehandler(e) {
 		qs.forEach(function(q) { q.build(); });
 		document.location.hash = Bookmark.dump(S, svars);
 	}
@@ -99,10 +127,16 @@ function setup(S, p, psrc, ptoc, qs, navtype, svars) {
 		p.build();
 		movehandler();
 		// XXX fragile
-		Dom.hide(ptoc.children[1]);
+		Dom.hide(/** @type{HideableHTMLElement} */ (ptoc.children[1]));
 	});
 }
 
+/**
+ * @param{BookState} S
+ * @param{Array<BuildableHTMLElement>} ps
+ * @param{Array.<SVarDescr>} svars
+ * @param{() => Array<string>} fns
+ */
 function init(S, ps, svars, fns) {
 	Bookmark.load(S, svars);
 	return Promise.all(Data.mget(fns())).then(function(xs) {
@@ -120,8 +154,12 @@ function init(S, ps, svars, fns) {
 	});
 }
 
+/**
+ * @param{BookState} S
+ * @returns{Promise<BuildableHTMLElement>}
+ */
 function mkbook(S) {
-	var p = document.createElement("div");
+	var p = Dom.mkbuildable("div");
 
 	var svars = [
 		{ bn : "c", sn : "move.ic", type : SVarType.Number },
@@ -133,18 +171,20 @@ function mkbook(S) {
 	var psection = mksection(S);
 	var pcn      = mkcn(S);
 	var psrc     = View.mkbasiccc(S);
-	var pdec     = View.mkstackvcuts(S);
+	var pdec     = View.mkstackvcuts(Object.assign({}, S, {
+		ts : [],
+	}));
 
 	var pnav = document.createElement("div");
 
-		var pnav0 = View.mknav(S, { type : "span", btns : [
+		var pnav0 = View.mknav({ type : "span", btns : [
 			[ "⇦", MoveDir.Prev, MoveWhat.Chunk ],
 			[ "←", MoveDir.Prev, MoveWhat.Word ]
-		] });
+		]});
 
-		var ptoc = View.mkmodalbtnwith(S, mktoc(S), { text : "目錄" });
+		var ptoc = View.mkmodalbtnwith(mktoc(S), { text : "目錄" });
 
-		var pnav1 = View.mknav(S, { type : "span", btns : [
+		var pnav1 = View.mknav({ type : "span", btns : [
 			[ "→", MoveDir.Next, MoveWhat.Word ],
 			[ "⇨", MoveDir.Next, MoveWhat.Chunk ]
 		] });
@@ -204,15 +244,18 @@ function mkbook(S) {
 	return xinit().then(function() { return p; });
 }
 
+/**
+ * @param{TabsConf} [tc]
+ */
 function mk(tc) {
-	// TODO: document (likely, used when going recursive)
-	tc ||= User.prefs.tabs;
-
-	return mkbook({
+	return mkbook(/** @type{BookState} */{
 		stack    : Stack.mk(),
 		move     : Move.mk(),
-		tabsconf : tc,
+		tabsconf : tc ||= User.prefs.tabs,
+		hasstack : false,
 		cache    : {},
+		book     : "",
+		ts       : [],
 	});
 }
 

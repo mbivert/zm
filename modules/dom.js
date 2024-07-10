@@ -59,7 +59,7 @@ function hide(x) {
  * @returns{HTMLElement} - x
  */
 function hidechildren(x) {
-	for (var i = 0; i < x.children.length; i++)
+	for (let i = 0; i < x.children.length; i++)
 		hide(/** @type{HideableHTMLElement} */ (x.children[i]));
 	return x;
 }
@@ -101,7 +101,7 @@ function mkspan(t, c) { return mke("span", t, c); }
  * @returns{HTMLElement} - <span> element containing given text.
  */
 function mke(n, t, c) {
-	var x = document.createElement(n);
+	let x = document.createElement(n);
 	if (t !== undefined) x.innerText = t;
 	if (c !== undefined) x.className = c;
 	return x;
@@ -114,9 +114,9 @@ function mke(n, t, c) {
  * @returns{HTMLElement}
  */
 function mktoc(cs) {
-	var x = document.createElement("ul");
-	for (var i = 0; i < cs.length; i++) {
-		var y = document.createElement('li');
+	let x = document.createElement("ul");
+	for (let i = 0; i < cs.length; i++) {
+		let y = document.createElement('li');
 		y.appendChild(mka(cs[i].v, Classes.tocentry, "#c="+cs[i].ic));
 		y.append(mktoc(cs[i].cs));
 		x.appendChild(y);
@@ -146,7 +146,7 @@ function mkdash() { return mkspan(" - "); }
  * @returns{HTMLElement} - <a> element with given properties.
  */
 function mka(t, c, h, i) {
-	var x       = document.createElement("a");
+	let x       = document.createElement("a");
 	x.innerText = t;
 	x.className = c || "";
 	x.href      = h || "#";
@@ -158,14 +158,14 @@ function mka(t, c, h, i) {
 /**
  * Creates a <select> from the given options.
  *
- * @param{Array<string>} xs  - text/values of the <option>s
+ * @param{Array<[string, string]>} xs  - text/values of the <option>s
  *
- * @returns{HTMLElement} - <a> element with given properties.
+ * @returns{HTMLSelectElement}
  */
 function mkselect(xs) {
-	var p = document.createElement("select");
-	for (var i = 0; i < xs.length; i++) {
-		var q = document.createElement("option")
+	let p = document.createElement("select");
+	for (let i = 0; i < xs.length; i++) {
+		let q = document.createElement("option")
 		q.value     = xs[i][0];
 		q.innerText = xs[i][1];
 		p.appendChild(q)
@@ -182,7 +182,7 @@ function mkselect(xs) {
  * also ':/^function mka\('
  *
  * @param{string}                c - class on which we want to registers click events.
- * @param{(e : PointerEvent) => (boolean)} f - event handler
+ * @param{(e : PointerEvent) => (boolean|void)} f - event handler
  * @param{HTMLElement}           [p] - where to attach handler [default: document]
  *
  * @returns{void}
@@ -198,7 +198,7 @@ function alisten(c, f, p) {
 			let b;
 			// TODO: this should work, but things are expected to break
 			e.preventDefault(); if ((b = f(e)) === false) e.stopPropagation();
-			return b;
+			return b || false;
 		});
 }
 
@@ -550,13 +550,13 @@ function loadfont(p) {
  * @returns{HTMLElement}
  */
 function mkimgs(imgs, single, c, err) {
-	var y  = mkspan();
+	let y  = mkspan();
 
 	// One item is expected later on.
 	if (imgs.length == 0) return y; // mkspan(err, c);
 
 	// true if at least one image was loaded.
-	var ok = false;
+	let ok = false;
 
 	/**
 	 * Callback based iteration:
@@ -574,7 +574,7 @@ function mkimgs(imgs, single, c, err) {
 			if (!ok) y.appendChild(mkspan(err, c))
 			return;
 		}
-		var z       = document.createElement("img");
+		let z       = document.createElement("img");
 		z.loading   = "lazy";
 		z.src       = imgs[i][1];
 		z.title     = imgs[i][0];
@@ -593,6 +593,37 @@ function mkimgs(imgs, single, c, err) {
 
 	return y;
 }
+
+/**
+ * Wraps the creation of an HTMLElement equipped a "build()"
+ * "method". This is to isolate typescript noise.
+ *
+ * @param{string} t
+ * @returns{BuildableHTMLElement}
+ */
+function mkbuildable(t) {
+	let p = document.createElement(t);
+	// @ts-ignore
+	p.build = function(){}
+	return /** @type{BuildableHTMLElement} */ (p);
+}
+
+/**
+ * Wraps the creation of an HTMLElement equipped a "build()"
+ * and a "move()" methods. Agaain, this is to isolate typescript noise.
+ *
+ * @param{string} t
+ * @returns{MovableBuildableHTMLElement}
+ */
+function mkmovablebuildable(t) {
+	let p = document.createElement(t);
+	// @ts-ignore
+	p.build = function(){}
+	// @ts-ignore
+	p.move  = function(){}
+	return /** @type{MovableBuildableHTMLElement} */ (p);
+}
+
 
 export {
 	isshown,
@@ -631,4 +662,7 @@ export {
 	mkimgs,
 
 	loadfont,
+
+	mkbuildable,
+	mkmovablebuildable,
 };

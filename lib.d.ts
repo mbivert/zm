@@ -77,10 +77,23 @@ interface ActiveableHTMLElement extends HTMLElement {
 	activated ?: boolean,
 }
 
+// TODO: do we really need to distuinguish betwen Maybe* and *?
 interface BuildableHTMLElement extends HTMLElement {
-	build  ?: () => void,
+	build  : (...args : any[]) => any,
 }
 
+interface MBuildableHTMLElement extends HTMLElement {
+	build  ?: (...args : any[]) => any,
+}
+
+// MaybeMovable
+interface MMovableBuildableHTMLElement extends BuildableHTMLElement {
+	move ?: (d : MoveDir, w : (MoveWhat|number)) => [number, number],
+}
+
+interface MovableBuildableHTMLElement extends BuildableHTMLElement {
+	move : (d : MoveDir, w : (MoveWhat|number)) => [number, number],
+}
 interface Test {
 	f        : Function,
 	args     : any[],
@@ -556,6 +569,8 @@ type MoveDirF = (
 	S : Movable, d : MoveDir, jc : number, jw : number
 ) => [number, number]
 
+type MoveFun = (d : MoveDir, w : (MoveWhat|number)) => [number, number]
+
 interface Movable {
 	ic : number,
 	iw : number,
@@ -887,7 +902,7 @@ interface Links {
 
 interface Tab {
 	// Generate HTML for given config/word
-	mk  : (c : TabItmConf, x : Token, gc : TabsConf) => HTMLElement,
+	mk  : (c : TabItmConf, S : VCutState) => HTMLElement,
 
 	// Is there anything to display for given config/word?
 	has : (c : TabItmConf, x : Token) => boolean,
@@ -1069,45 +1084,100 @@ interface GridCache {
 	[details: string] : CacheEntry,
 }
 
-/*
- * This encodes the state of a decomposition grid, for either
- * a mksingle() or a mksinglenav().
- *
- * This is a bit messy for now, because the state is shared
- * between various distinct functions. Think of it as a collection
- * of global variables.
- *
- * Eventually, this may be split in distinct interfaces to
- * better reflect usage; the goal is for now to get some
- * static typing in modules/view.js, however imperfect.
- */
-interface GridConfState {
-	// Configuration elements
+interface WithStack {
+	// We always have a stack (mksingle(), mksinglenav())
+	stack : Stack,
+}
+
+interface WithMove {
+	// We always have a stack (mksingle(), mksinglenav())
+	move : Movable,
+}
+
+interface WithTokens {
+	// Tokens extracted from the current word in the stack
+	// TODO: rename the field (s/ts/tokens/)
+	ts    : Tokens,
+}
+
+interface WithToken {
+	// Current token (in a vcut)
+	tok   : Token,
+}
+
+interface WithStates {
+	// TODO
+	states : States,
+}
+
+interface UIBaseConf {
 	//	true iff there's a higher stack in the DOM
-	hasstack  : boolean,
+	hasstack ?: boolean,
+
 	//	defaults to User.prefs.tabs
 	tabsconf ?: TabsConf,
 
 	// Caching the state of the grid on a per-word basis.
-	cache     : GridCache,
-
-	// We always have a stack (mksingle(), mksinglenav())
-	stack : Stack,
-
-	// Tokens extracted from the current word in the stack
-	ts    : Tokens,
-
-	// Current token (in a vcut)
-	tok   ?: Token,
-
-	// Position of the current token in ts (in a vcut)
-	vcutn ?: number,
-
-	// TODO
-	states ?: States,
-
-	// But there's only a move when we actually need to move
-	// (i.e. for mksinglenav())
-	move  ?: Movable,
+	cache    ?: GridCache,
 }
 
+// UIBaseConf but with all fields mandatory
+interface UIBaseState {
+	// Configuration elements
+	//	true iff there's a higher stack in the DOM
+	hasstack : boolean,
+
+	//	defaults to User.prefs.tabs
+	tabsconf : TabsConf,
+
+	// Caching the state of the grid on a per-word basis.
+	cache    : GridCache,
+}
+
+interface SingleNavState extends UIBaseState, WithStack, WithMove, WithTokens {}
+
+interface TranslatedBookState extends SingleNavState {
+	trcs   : Array<TokedChunk>,
+	trpcs  : Pieces,
+	srcpcs : Pieces,
+	book   : string,
+}
+
+interface BookState extends SingleNavState {
+	book   : string,
+}
+
+interface IndexState extends SingleNavState, WithTokens {
+	toanalyse  ?: string,
+	tosearch   ?: string,
+	tocontains ?: string,
+}
+
+// - the stack is needed in the vcuts because it will be
+//   needed in the vcut: that's how we'll be able to push words
+//   located e.g. in definition for inspection
+// - the tokens correspond to all the tokens extracted from the current
+//   word in the stack (?)
+interface VCutsState extends UIBaseState, WithStack, WithTokens {}
+
+interface SingleNavStateWithToken extends SingleNavState, WithToken {}
+
+interface VCutState extends VCutsState, WithToken, WithStates {}
+
+interface TabItmsState extends WithToken {
+	// Configuration for the TabItms
+	cs : TabItmsConf,
+
+	// TabItms index (locally constant)
+	i  : number,
+
+	// TabItm index,
+	j  : number,
+}
+
+interface TabItmsStates extends UIBaseState, WithStates, WithToken {
+	// Currently active TabItms
+	active : number,
+}
+
+interface HCutState extends TabItmsStates, WithStack, WithTokens {}

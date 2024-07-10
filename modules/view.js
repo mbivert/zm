@@ -342,13 +342,11 @@ function mkdictentry(ds) {
  * for x.
  *
  * @param{TabItmConf} c
- * @param{GridConfState} S
- * @param{number} ic
- * @param{number} iw
+ * @param{VCutState} S
  *
  * @returns{HTMLElement}
  */
-function mknavdict(c, S, ic, iw) {
+function mknavdict(c, S) {
 	// Safety as tab config is not strictly typed
 	if (!c.dict) {
 		Assert.assert("No .dict in tab configuration");
@@ -358,7 +356,9 @@ function mknavdict(c, S, ic, iw) {
 	// XXX
 	let s = S.tok.d[c.dict]["xx5"][0].ds[0];
 
-	return mksinglenav(s, S, ic, iw);
+	console.log("mknavdict", s, S);
+
+	return mksinglenav(s, S);
 }
 
 /**
@@ -366,7 +366,7 @@ function mknavdict(c, S, ic, iw) {
  * for x.
  *
  * @param{TabItmConf} c
- * @param{GridConfState} S
+ * @param{VCutState} S
  *
  * @returns{HTMLElement}
  */
@@ -393,7 +393,7 @@ function mkdictschain(c, S) {
  * Creates a HTMLElement holding dictionary content for x.
  *
  * @param{TabItmConf} c
- * @param{GridConfState}     S
+ * @param{VCutState}  S
  *
  * @returns{HTMLElement}
  */
@@ -416,7 +416,7 @@ function mkdict(c, S) {
  * Same goes for the audio files.
  *
  * @param{TabItmConf} c
- * @param{GridConfState}     S
+ * @param{VCutState}     S
  *
  * @returns{HTMLElement}
  */
@@ -439,7 +439,7 @@ function mkimgs(c, S) {
  * Create a HTMLElement holding (external) links related to x.
  *
  * @param{TabItmConf} c
- * @param{GridConfState}     S
+ * @param{VCutState}  S
  *
  * @returns{HTMLElement}
  */
@@ -466,7 +466,7 @@ function mklinks(c, S) {
  * Create a HTMLElement holding x's decomposition.
  *
  * @param{TabItmConf} c
- * @param{GridConfState}     S // TODO
+ * @param{VCutState}  S
  *
  * @returns{HTMLElement}
  */
@@ -478,9 +478,11 @@ function mkdecomp(c, S) {
 	}
 
 	return mkvcuts({
+		stack    : S.stack,
 		cache    : S.cache,
 		tabsconf : S.tabsconf,
-		ts : (S.tok.c[c.decomp][0].c || []).map(function(c) {
+		hasstack : false,
+		ts       : (S.tok.c[c.decomp][0].c || []).map(function(c) {
 			return Data.cut(c.v)[0];
 		})
 	});
@@ -537,11 +539,10 @@ var tabs = {
  *	S.j   : currently enabled tabitm for current tabitms, may be
  *	        changed on click.
  *
- * @param{GridConfState} S
- * @returns{BuildableHTMLElement}
+ * @param{TabItmsState} S
+ * @returns{MBuildableHTMLElement}
  */
 function mktabitms(S) {
-
 	// S.cs is a shortcut for S.tabsconf.confs[S.i][S.j] XXX (?)
 
 	// By convention, first tab is the only one containing
@@ -567,12 +568,15 @@ function mktabitms(S) {
 	p.setAttribute(Attrs.itmscount,  b.toString());
 	if (b > 1) p.classList.add("zhongmu-with-after");
 
+	/**
+	 * @returns{number}
+	 */
 	function countenabled() {
 		let [_x, b, _y, _z] = nextenabled(S.cs, S.tok, -1);
 		return b;
 	}
 
-	/*
+	/**
 	 * Retrieve the next tabitm enabled after the j-th.
 	 *
 	 * The first one is returned iff j < 0.
@@ -580,6 +584,11 @@ function mktabitms(S) {
 	 *
 	 * Hence, if we found no cs[k], k > j, enabled, then
 	 * we look loop to the first one.
+	 *
+	 * @param{TabItmsConf} cs
+	 * @param{Token} t
+	 * @param{number} j
+	 * @returns{[number, number, number, boolean]}
 	 */
 	function nextenabled(cs, t, j) {
 		let hasloop = false;
@@ -611,6 +620,10 @@ function mktabitms(S) {
 		});
 	}
 
+	/**
+	 * @param{boolean} firstbuild
+	 * @returns{number}
+	 */
 	function build(firstbuild) {
 		let [a, b, j, hasloop] = nextenabled(S.cs, S.tok, S.j);
 
@@ -636,6 +649,7 @@ function mktabitms(S) {
 		return S.j;
 	}
 
+	// @ts-ignore
 	p.build = build;
 
 	setup();
@@ -652,13 +666,18 @@ function mktabitms(S) {
  *	S.states = [ j0, j1, ... ];
  *	S.active = i2;
  *
- * @param{GridConfState} S
+ * @param{TabItmsStates} S
  * @returns{BuildableHTMLElement}
  */
 function mkheader(S) {
-	let p = document.createElement("div");
+	let p = Dom.mkbuildable("div");
 	p.classList.add(Classes.descrheader);
 
+	/**
+	 * @param{number} i
+	 * @param{number} j
+	 * @returns{void}
+	 */
 	function toggleactive(i, j) {
 		p.children[S.active].classList.remove(Classes.tabactive);
 		p.children[i].classList.add(Classes.tabactive);
@@ -666,11 +685,18 @@ function mkheader(S) {
 		S.states[S.active] = j;
 	}
 
+	/**
+	 * @returns{void}
+	 */
 	function setup() {
 		let [tc, t] = [S.tabsconf, S.tok];
 		let css = tc.confs;
 
-		p.addEventListener("zm-tabitms-click", function(e) {
+		p.addEventListener("zm-tabitms-click", function(ev) {
+			// For typescript: we're sure this really is a CustomEvent
+			// (and thus that it carries a .detail field)
+			let e = /** @type{CustomEvent} */ (ev);
+
 			// NOTE: we let the event bubble up, but its detail.i/detail.j
 			// are "incorrect" from now on, and one should refer
 			// to the shared state instead.
@@ -682,19 +708,37 @@ function mkheader(S) {
 			let isdecomp = i == 0;
 
 			if (!isdecomp) {
+				if (i >= p.children.length || i < 0) {
+					Assert.assert("Invalid tabitms index '"+i+"'");
+					// @ts-ignore
+					return;
+				}
+				let q = /** @type{BuildableHTMLElement} */ (p.children[i]);
+				if (q === undefined) {
+					// @ts-ignore
+					return;
+				}
+
 				// If tabitms is already active, rotate
-				if (isactive) S.states[S.active] = p.children[i].build();
+				// XXX for some reasons, typescript thinks q can be undefined,
+				// despite the previous check on 'i'.
+				if (q !== undefined && isactive) S.states[S.active] =
+					/** @type{number} */ (q.build());
 
 				// Otherwise, enable it
 				else          toggleactive(i, j);
 
 			// There's no notion of active decomposition tabitms
-			} else S.states[0] = p.children[0].build();
+			} else S.states[0] =
+				(/** @type{BuildableHTMLElement} */ (p.children[0])).build();
 		});
 	}
 
-	// css for "array of cs", not style/CSS related
+	/**
+	 * @returns{void}
+	 */
 	function build() {
+		// css for "array of cs", not style/CSS related
 		let css = S.tabsconf.confs;
 
 		p.innerHTML = '';
@@ -715,6 +759,7 @@ function mkheader(S) {
 		toggleactive(S.active, S.states[S.active]);
 	}
 
+	// @ts-ignore
 	p.build = build;
 
 	setup();
@@ -725,26 +770,33 @@ function mkheader(S) {
 }
 
 /**
- * @param{GridConfState} S
+ * @param{VCutState} S
  * @param{{class : string}} n
  * @returns{BuildableHTMLElement}
  */
 function mktabcontent(S, n) {
-	let p = document.createElement("div");
+	let p = Dom.mkbuildable("div");
 
 	p.classList.add(n.class);
 
-	function build(i, j, ...args) {
+	/**
+	 * @param{number} i
+	 * @param{number} j
+	 * param{any}    args
+	 * @returns{void}
+	 */
+	function build(i, j /*, ...args */) {
 		let c = S.tabsconf.confs[i][j];
 
 		p.innerHTML = '';
 
-		let q = tabs[c.type].mk(c, S, ...args);
+		let q = tabs[c.type].mk(c, S /*, ...args */);
 		p.appendChild(q);
 		// NOTE: .focus() for keyboards events on navdict
 		q.focus();
 	}
 
+	// @ts-ignore
 	p.build = build;
 
 	// NOTE: building delegated to parent, once S has been adjusted.
@@ -752,17 +804,22 @@ function mktabcontent(S, n) {
 	return p;
 }
 
+/**
+ *
+ * @param{VCutState} S
+ * @returns{HTMLElement}
+ */
 function mkword(S) {
-	var p = document.createElement("div");
+	let p = document.createElement("div");
 
-	var w = S.tok.v;
-	var c = S.tabsconf.word;
+	let w = S.tok.v;
+	let c = S.tabsconf.word;
 
 	/** @returns{HTMLElement} */
 	function mktext() {
-		var q = Dom.mke('div', undefined, Classes.wordtext);
+		let q = Dom.mke('div', undefined, Classes.wordtext);
 		q.appendChild(Dom.mke('span', w));
-		var r = Dom.mke('sup', '', Classes.wordtextsup);
+		let r = Dom.mke('sup', '', Classes.wordtextsup);
 		r.appendChild(Dom.mka(w, Classes.defwordtop));
 		q.appendChild(r);
 		return q;
@@ -784,7 +841,11 @@ function mkword(S) {
 	return p;
 }
 
-function mkhcut(S, n) {
+/**
+ * @param{HCutState} S
+ * @returns{HTMLElement}
+ */
+function mkhcut(S) {
 	var p = document.createElement("div");
 
 		var q = document.createElement("div");
@@ -803,7 +864,8 @@ function mkhcut(S, n) {
 	// We need a little wrapper for this one so as to manage
 	// the extra caching arguments (ic/iw)
 	function buildcontent() {
-		var args = [];
+		/** @type{Array<number>} */
+		let args = [];
 
 		if (S.cache[S.tok.v])
 		if (S.cache[S.tok.v].iciw)
@@ -817,7 +879,11 @@ function mkhcut(S, n) {
 	function listentabitm() {
 		var [tc, t] = [S.tabsconf, S.tok];
 
-		p.addEventListener("zm-tabitms-click", function(e) {
+		p.addEventListener("zm-tabitms-click", function(ev) {
+			// We're sure this is a CustomEvent, hence that it
+			// has a .detail field
+			let e = /** @type{CustomEvent} */ (ev);
+
 			e.preventDefault(); e.stopPropagation();
 			var isdecomp = e.detail.i == 0;
 
@@ -829,7 +895,11 @@ function mkhcut(S, n) {
 			else
 				buildcontent();
 
-			S.cache[S.tok.v] ||= {};
+			S.cache[S.tok.v] ||= {
+				active : -1,
+				states : [],
+				iciw   : {},
+			};
 			S.cache[S.tok.v].active = S.active;
 			S.cache[S.tok.v].states = S.states;
 
@@ -841,9 +911,17 @@ function mkhcut(S, n) {
 		// a hcut may contain a 'function mknavdict('; in which
 		// case, we'll want to cache the current position, so as
 		// to restore it when moving from tab to tab.
-		p.addEventListener("zm-nav-move", function(e) {
+		p.addEventListener("zm-nav-move", function(ev) {
+			// We're sure this is a CustomEvent, hence that it
+			// has a .detail field
+			let e = /** @type{CustomEvent} */ (ev);
+
 			e.preventDefault(); e.stopPropagation();
-			S.cache[S.tok.v] ||= {};
+			S.cache[S.tok.v] ||= {
+				active : -1,
+				states : [],
+				iciw   : {},
+			};
 			S.cache[S.tok.v].iciw ||= {};
 			S.cache[S.tok.v].iciw[S.active] ||= {};
 			S.cache[S.tok.v].iciw[S.active][S.states[S.active]] = e.detail;
@@ -854,6 +932,12 @@ function mkhcut(S, n) {
 		});
 	}
 
+	/**
+	 * @param{Token} t
+	 * @param{TabItmsConfs} cs
+	 * @param{DefDispConf} ps
+	 * @returns{[number|undefined, number|undefined]}
+	 */
 	function getdefaultdisp(t, cs, ps) {
 		for (var i = 0; i < ps.length; i++)
 		for (var j = 0; j < cs.length; j++)
@@ -882,7 +966,11 @@ function mkhcut(S, n) {
 			S.tabsconf.defaultdisplay || []
 		);
 
-		Assert.assert("TODO tabdefaultdisplay not found", i !== undefined);
+		if (i === undefined || j === undefined) {
+			Assert.assert("TODO tabdefaultdisplay not found", i !== undefined);
+			// @ts-ignore
+			return;
+		}
 
 		S.active           = i;
 		S.states[S.active] = j;
@@ -900,7 +988,7 @@ function mkhcut(S, n) {
 }
 
 /**
- * @param{GridConfState} S
+ * @param{VCutState} S
  * @returns{HTMLElement}
  */
 function mkvcut(S) {
@@ -908,7 +996,9 @@ function mkvcut(S) {
 	p.classList.add(Classes.vcut);
 
 	p.appendChild(mkword(S));
-	p.appendChild(mkhcut(S));
+	p.appendChild(mkhcut(Object.assign({}, S, {
+		active : -1,
+	})));
 
 	return p;
 }
@@ -918,11 +1008,11 @@ function mkvcut(S) {
  * cut holds a word on one side of the cut, and random informations
  * about that word on the other side.
  *
- * @param{GridConfState} S
+ * @param{VCutsState} S
  * @returns{BuildableHTMLElement}
  */
 function mkvcuts(S) {
-	var p = document.createElement("div");
+	var p = Dom.mkbuildable("div");
 
 	// TODO rename/document (at least used for help/kao)
 	p.classList.add(Classes.vcuts);
@@ -947,8 +1037,13 @@ function mkvcuts(S) {
 	return p;
 }
 
+/**
+ *
+ * @param{WithStack} S
+ * @returns{BuildableHTMLElement}
+ */
 function mkstack(S) {
-	var p = document.createElement("div");
+	var p = Dom.mkbuildable("div");
 
 	// TODO rename/document (for now, only used to target
 	// for style for help/kao)
@@ -982,10 +1077,14 @@ function mkstack(S) {
  * the HTML layouts of a stackvcuts.
  *
  * @param{BuildableHTMLElement} p
- * @param{GridConfState} S
+ * @param{VCutsState} S
  */
 function setupstackvcuts(p, S) {
 	function listendefword() {
+		/**
+		 * @param{Event} e
+		 * @returns{boolean}
+		 */
 		function handler(e) {
 			let s = Dom.gettarget(e).innerText;
 			console.log("handling defword", e, s);
@@ -1091,27 +1190,29 @@ function setupstackvcuts(p, S) {
 
 /**
  *
- * @param{GridConfState} S
+ * @param{VCutsState} S
  * @param{BuildableHTMLElement} pstack
  * @param{BuildableHTMLElement} pvcuts
  */
 function buildstackvcuts(S, pstack, pvcuts) {
-	// TODO: this e.g. happens in mkindex(); clarify
-	if (!S.stack.xs.length) return;
+	let w = S.stack.current();
 
-	S.ts = Data.cut(S.stack.current());
+	// TODO: this e.g. happens in mkindex(); clarify
+	if (w === undefined) return;
+
+	S.ts = Data.cut(w);
 	pstack.build();
 	pvcuts.build();
 }
 
 /**
- * @param{GridConfState} S
- * @param{{class : string}} n
+ * @param{VCutsState} S
+ * @param{{class ?: string, nohelp ?: boolean}} [n]
  * @returns{BuildableHTMLElement}
  */
 function mkstackvcuts(S, n) {
-	let p = document.createElement("div");
-	n ||= {};
+	let p = Dom.mkbuildable("div");
+	n ||= {class : "", nohelp : false};
 
 	if (n.class) p.classList.add(n.class);
 
@@ -1120,7 +1221,8 @@ function mkstackvcuts(S, n) {
 
 	function build() { buildstackvcuts(S, pstack, pvcuts);  }
 
-	if (!n.nohelp) p.appendChild(mkinlinehelp(S));
+	if (!n.nohelp) p.appendChild(mkinlinehelp());
+
 	p.appendChild(pstack);
 	p.appendChild(pvcuts);
 
@@ -1138,26 +1240,26 @@ function mkstackvcuts(S, n) {
 // also exits it), and whatever's returned by n.f().
 
 /**
- * @param{GridConfState} S
- * @param{HTMLElement} r
- * @param{{class : string}} n
+ * param{} S
+ * @param{MBuildableHTMLElement} r
+ * @param{{class ?: string, text : string}} n
  * @returns{BuildableHTMLElement}
  */
-function mkmodalbtnwith(S, r, n) {
-	var p = document.createElement("span");
+function mkmodalbtnwith(r, n) {
+	let p = Dom.mkbuildable("span");
 
-		var b = document.createElement("button");
+		let b = document.createElement("button");
 		b.innerText = n.text;
 		if (n.class) b.classList.add(n.class);
 
-		var m = document.createElement("span");
+		let m = document.createElement("span");
 		m.style.display = "none";
 		m.classList.add("zhongmu-modal");
 
-			var q = document.createElement("span");
+			let q = document.createElement("span");
 			q.classList.add("zhongmu-modal-content");
 
-				var c = document.createElement("button");
+				let c = document.createElement("button");
 				c.innerText = "×";
 				c.classList.add("zhongmu-modal-close-btn");
 
@@ -1181,7 +1283,7 @@ function mkmodalbtnwith(S, r, n) {
 
 		// Clicking outside the modal when its displayed
 		document.addEventListener("click", function(e) {
-			var r = Dom.gettarget(e);
+			let r = Dom.gettarget(e);
 
 			if (Dom.isshown(m))
 			if (!m.children[0].contains(r))
@@ -1192,7 +1294,10 @@ function mkmodalbtnwith(S, r, n) {
 	// NOTE: used for toc in pnav in book.js
 	// TODO: f is useless, we could just create the element first
 	// and thus avoid this
-	function build() { if (r.build) r.build(); }
+	function build() {
+		// @ts-ignore
+		if (r.build) r.build();
+	}
 
 	setup();
 
@@ -1201,7 +1306,11 @@ function mkmodalbtnwith(S, r, n) {
 	return p;
 }
 
-function mkhelp(S) {
+/**
+ * param{} S
+ * @returns{HTMLElement}
+ */
+function mkhelp(/* S */) {
 	var p = document.createElement("span");
 	var q = document.createElement("span");
 
@@ -1297,7 +1406,7 @@ function mkhelp(S) {
 				</li>
 			</ul>`;
 
-		var helptc = {
+		let helptc = {
 			"defaultdisplay" : ["defs", "links"],
 			"word" : {
 				"prependtext" : true,
@@ -1308,16 +1417,19 @@ function mkhelp(S) {
 				[
 					{
 						"name"   : "auto",
+						// @ts-ignore
 						"type"   : TabType.Decomp,
 						"decomp" : "auto",
 					},
 					{
 						"name"   : "wikimedia",
+						// @ts-ignore
 						"type"   : TabType.Decomp,
 						"decomp" : "WM-decomp",
 					},
 					{
 						"name"   : "zm-decomp",
+						// @ts-ignore
 						"type"   : TabType.Decomp,
 						"decomp" : "ZM-decomp",
 					},
@@ -1325,6 +1437,7 @@ function mkhelp(S) {
 				[
 					{
 						"name"   : "defs",
+						// @ts-ignore
 						"type"   : TabType.DictsChain,
 						"dicts"  : ["CC-CEDICT", "ZM-add", "CC-CEDICT-singles"],
 					},
@@ -1337,6 +1450,7 @@ function mkhelp(S) {
 				],
 				[{
 					"name"   : "說文",
+					// @ts-ignore
 					"type"   : TabType.NavDict,
 					"dict"   : "WS-shuowen",
 					"tabs"   : {
@@ -1352,12 +1466,14 @@ function mkhelp(S) {
 				[
 					{
 						"name"   : "imgs",
+						// @ts-ignore
 						"type"   : TabType.Imgs,
 						"single" : true, // stop loading image once one succeeded.
 						"imgs"   : [ "wm-bw-gif", "wm-red-static", "wm-bw-static" ],
 					},
 					{
 						"name"   : "olds",
+						// @ts-ignore
 						"type"   : TabType.Imgs,
 						"single" : false,
 						"imgs"   : [
@@ -1369,6 +1485,7 @@ function mkhelp(S) {
 				],
 				[{
 					"name"   : "links",
+					// @ts-ignore
 					"type"   : TabType.Links,
 					"links"  : [
 						"chinese-characters.org",
@@ -1380,22 +1497,31 @@ function mkhelp(S) {
 				}],
 			],
 		};
-
 		p.appendChild(q);
-		var r = mksingle("考", helptc, true);
+
+		let r = mksingle("考", /** @type{TabsConf} */ (helptc), true);
 		r.id = "kao";
+
 		p.appendChild(r);
-		return p;
+	return p;
 }
 
-function mkinlinehelp(S) {
-	return mkmodalbtnwith(S, mkhelp(S), {
+/**
+ * @returns{BuildableHTMLElement}
+ */
+function mkinlinehelp(/* S */) {
+	return mkmodalbtnwith(/* S, */ mkhelp(/* S */), {
 		text : "?", class : "zhongmu-help-btn"
 	});
 }
 
+/**
+ * ccc : current chunk container
+ * @param{WithMove} S
+ * @returns{BuildableHTMLElement}
+ */
 function mkbasiccc(S) {
-	var p = document.createElement("div");
+	var p = Dom.mkbuildable("div");
 
 	function build() {
 		// TODO: this happens e.g. in mkindex(); clarify
@@ -1419,18 +1545,7 @@ function mkbasiccc(S) {
 		);
 	}
 
-	function listenmousemove() {
-		p.addEventListener("click", function (e) {
-			// Those are handled by handlepiece() (TODO)
-			if (e.ctrlKey) return;
-
-			var x = Dom.countbyteoffset(e, p);
-			if (!x) e.stopPropagation();
-			else    e.payload = { offset : x[2] };
-		});
-	}
-
-	function setup() { listenmousemove(); }
+	function setup() { listenmousemove(p); }
 
 	p.build = build;
 
@@ -1440,11 +1555,38 @@ function mkbasiccc(S) {
 	return p;
 }
 
+/** @param{HTMLElement} p */
+function listenmousemove(p) {
+	p.addEventListener("click", function (e) {
+		// Those are handled by handlepiece() (TODO)
+		if (e.ctrlKey) return;
+
+		let x = Dom.countbyteoffset(e, p);
+		e.stopPropagation();
+		if (x) p.dispatchEvent(new CustomEvent("zm-mouse-move", {
+			bubbles : true,
+			detail : x[2],
+		}));
+
+	});
+}
 var mainhandler = false;
 
+/**
+ * @param{MMovableBuildableHTMLElement} p
+ * @param{HTMLElement} psrc
+ * @param{SingleNavState} S
+ * @param{string} keys
+ * @returns{void}
+ */
 function setupwithnav(p, psrc, S, keys) {
 	keys ||= "basic";
 
+	/**
+	 * @param{MoveDir} d
+	 * @param{MoveWhat|number} w
+	 * @returns{void}
+	 */
 	function moveandbuild(d, w) {
 		// s/move/mover/
 		var [ic, iw] = p.move ? p.move(d, w) : S.move.move(d, w);
@@ -1463,19 +1605,17 @@ function setupwithnav(p, psrc, S, keys) {
 	}
 
 	function listenmousemove() {
-		psrc.addEventListener("click", function (e) {
-			// Those are handled by handlepiece() (TODO)
-			if (e.ctrlKey) return;
-
-			// TODO: use specific event type instead, e.g. listen on "offsetmove"
-			if (e.payload && e.payload.offset) {
-				moveandbuild(MoveDir.Offset, e.payload.offset);
-				e.stopPropagation();
-				e.preventDefault();
-			}
+		psrc.addEventListener("zm-mouse-move", function(ev) {
+			let e = /** @type{CustomEvent} */ (ev);
+			moveandbuild(/** @type{MoveDir} */ (MoveDir.Offset), e.detail);
+			e.stopPropagation();
+			e.preventDefault();
 		});
+
 	}
 
+	/* @type{Object.<string, Array<{ k : string, m : string, d : MoveDir, w : MoveWhat }>>} */
+	/** @type{Object.<string, Array<{ k : string, m : string, d : string, w : string }>>} */
 	var kmvs = {
 		"basic" : [
 			{ k : "ArrowRight", m : "alt",  d : MoveDir.Next, w : MoveWhat.Chunk },
@@ -1506,6 +1646,7 @@ function setupwithnav(p, psrc, S, keys) {
 				if ((kmvs[keys][i].m || "") == "ctrl" && !e.ctrlKey) continue;
 				if ((kmvs[keys][i].m || "") == "alt"  && !e.altKey)  continue;
 				e.preventDefault(); e.stopPropagation();
+				// @ts-ignore
 				moveandbuild(kmvs[keys][i].d, kmvs[keys][i].w)
 				break;
 			}
@@ -1518,8 +1659,11 @@ function setupwithnav(p, psrc, S, keys) {
 
 	function listenbtns() {
 		// TODO: ../events.js ?
-		p.addEventListener("zm-move-btn", function(e) {
-			moveandbuild(...e.detail);
+		p.addEventListener("zm-move-btn", function(ev) {
+			// We're sure this is a CustomEvent, equipped with
+			// a .detail field.
+			let e = /** @type{CustomEvent} */ (ev);
+			moveandbuild(e.detail[0], e.detail[1]);
 			e.preventDefault();
 			e.stopPropagation();
 			return false;
@@ -1576,12 +1720,19 @@ function setupwithnav(p, psrc, S, keys) {
 	listenall();
 }
 
-function mknav(S, n) {
-	var p = document.createElement(n.type || "div");
+/**
+ * TODO: clarify when n.type isn't a div.
+ *
+ * param{{ type : string, btns : Array<[string, MoveDir, MoveWhat]> }} n
+ * @param{{ type ?: string, btns : Array<[string, string, string]> }} n
+ * @returns{HTMLElement}
+ */
+function mknav(n) {
+	let p = document.createElement(n.type || "div");
 	p.classList.add(Classes.navbtns);
 
 	n.btns.forEach(function(b) {
-		var q = document.createElement("button");
+		let q = document.createElement("button");
 		q.innerText = b[0];
 		q.addEventListener("click", function(e) {
 			e.preventDefault(); e.stopPropagation();
@@ -1602,13 +1753,13 @@ function mknav(S, n) {
  *
  * The state has been fully prepared by the caller ':/function mksinglenav\('
  *
- * @param{GridConfState} S - single nav's state (stack, move, conf, etc.)
+ * @param{SingleNavState} S - single nav's state (stack, move, conf, etc.)
  * @returns{BuildableHTMLElement}
  */
 function mksinglenavaux(S) {
-	let p = document.createElement("div");
+	let p = Dom.mkbuildable("div");
 
-	let pnav   = mknav(S, { btns : [
+	let pnav   = mknav({ btns : [
 		[ "←", MoveDir.Prev, MoveWhat.Word ],
 		[ "→", MoveDir.Next, MoveWhat.Word ]
 	] });
@@ -1662,9 +1813,6 @@ function mksinglenavaux(S) {
 function mksingle(w, tc, nohelp) {
 	let stack = Stack.mk();
 
-	// TODO: document (likely, used when going recursive)
-	tc ||= User.prefs.tabs;
-
 	// XXX This isn't clearly documented, and a bit fragile, as we may
 	// have dictionary entries containing spaces. For now, this is a hack
 	// to allow to view multiple words through the stack.
@@ -1680,10 +1828,14 @@ function mksingle(w, tc, nohelp) {
 	// Select (show) first word
 	stack.n = 0;
 
-	return mkstackvcuts(
-		{ stack : stack, tabsconf : tc, cache : {}    },
-		{ class : Classes.singleword, nohelp : nohelp },
-	);
+	return mkstackvcuts(/** @type{VCutsState} */ {
+		stack    : stack,
+		// TODO: document (likely, used when going recursive)
+		tabsconf : tc ||= User.prefs.tabs,
+		cache    : {},
+		ts       : [],
+		hasstack : false,
+	}, { class : Classes.singleword, nohelp : nohelp });
 }
 
 /**
@@ -1691,7 +1843,7 @@ function mksingle(w, tc, nohelp) {
  * through a string one word at a time.
  *
  * @param{string} s - string to inspect / navigate in
- * @param{GridConfState} [S] - configuration essentially (XXX naming)
+ * @param{UIBaseConf} [S] - Configuration; to be extended as a state inside
  * @param{number} [ic] - chunk index
  * @param{number} [iw] - word index (in current chunk)
  * @returns{HTMLElement}
@@ -1707,15 +1859,16 @@ function mksinglenav(s, S, ic, iw) {
 
 	S ||= {};
 
-	return mksinglenavaux({
+	return mksinglenavaux(/** @type{SingleNavState} */{
 		stack    : stack,
 		move     : move,
 		tabsconf : S.tabsconf || User.prefs.tabs,
 		cache    : S.cache || {},
+		ts       : [],
 
 		// remember, boolean true iff there's a higher stack
 		// in the DOM.
-		hasstack : S.hasstack,
+		hasstack : S.hasstack || false,
 	});
 }
 
@@ -1730,4 +1883,6 @@ export {
 	mkstackvcuts,
 	mknav,
 	setupwithnav,
+
+	listenmousemove,
 };

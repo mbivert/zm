@@ -10,18 +10,24 @@ import * as Bookmark          from "../../modules/bookmark.js";
 import { MoveDir, MoveWhat }  from "../../modules/enums.js";
 import { SVarType          }  from "../../modules/enums.js";
 
-function mkinput(S) {
-	var p = document.createElement("textarea");
-	p.setAttribute("rows", 5);
+/** @returns{HTMLTextAreaElement} */
+function mkinput() {
+	let p = document.createElement("textarea");
+	p.setAttribute("rows", "5");
 	p.setAttribute("id",   "input");
 	p.value = "你好，世界";
 	return p;
 }
 
+/**
+ * @param{IndexState} S
+ * @returns{BuildableHTMLElement}
+ */
 function mkresults(S) {
-	var p = document.createElement("span");
+	var p = Dom.mkbuildable("span");
 	p.setAttribute("id", "results");
 
+	/** @param{[string, string]} xs */
 	function build(xs) {
 		p.innerHTML = '';
 		var ul = document.createElement("ul");
@@ -40,6 +46,7 @@ function mkresults(S) {
 	return p;
 }
 
+/** @returns{HTMLElement} */
 function mkhelpmsg() {
 	var p = document.createElement("span");
 	var url = "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions";
@@ -104,28 +111,32 @@ function mkhelpmsg() {
 	return p;
 }
 
+/**
+ * @param{IndexState} S
+ */
 function mkindex(S) {
-	var p = document.createElement("div");
+	let p = Dom.mkbuildable("div");
+
 	p.classList.add("main-index");
 	p.id = "main"; // still used in ../dom.js:/fontFamily
 
-	var pinput   = mkinput(S);
-	var presults = mkresults(S);
+	let pinput   = mkinput();
+	let presults = mkresults(S);
 
 	// NOTE: we could have a separate component for
 	// clarity to wrap all those, but its convenient
 	// to have panalyse/psearch/pcontains and register handlers
 	// directly here.
-	var pbtns = document.createElement("div");
+	let pbtns = document.createElement("div");
 	pbtns.setAttribute("id", "submit-search");
 
-		var panalyse  = Dom.mke("button", "Analyse");
-		var psearch   = Dom.mke("button", "Search");
-		var pcontains = Dom.mke("button", "Contains")
-		var phelp     = View.mkmodalbtnwith(S, mkhelpmsg(S), {
+		let panalyse  = Dom.mke("button", "Analyse");
+		let psearch   = Dom.mke("button", "Search");
+		let pcontains = Dom.mke("button", "Contains")
+		let phelp     = View.mkmodalbtnwith(mkhelpmsg(), {
 			text : "Help",
 		});
-		var psamples = Dom.mkselect([
+		let psamples = Dom.mkselect([
 				["",   "Sample characters:"     ],
 				["文", "文 (culture, language)" ],
 				["好", "好 (good)"              ],
@@ -139,15 +150,15 @@ function mkindex(S) {
 
 		pbtns.append(panalyse, psearch, pcontains, phelp, psamples);
 
-	var pnav   = View.mknav(S, { btns : [
+	let pnav   = View.mknav({ btns : [
 		[ "⇦", MoveDir.Prev, MoveWhat.Chunk ],
 		[ "←", MoveDir.Prev, MoveWhat.Word  ],
 		[ "→", MoveDir.Next, MoveWhat.Word  ],
 		[ "⇨", MoveDir.Next, MoveWhat.Chunk ]
-	] });
+	]});
 
-	var psrc  = View.mkbasiccc(S); // TODO: has/used to have a Classes.navigateable
-	var pdec  = View.mkstackvcuts(S);
+	let psrc  = View.mkbasiccc(S); // TODO: has/used to have a Classes.navigateable
+	let pdec  = View.mkstackvcuts(S);
 
 	pnav.setAttribute("id", "nav");
 	psrc.setAttribute("id", "src");
@@ -155,7 +166,7 @@ function mkindex(S) {
 
 	p.append(pinput, presults, pbtns, pnav, psrc, pdec);
 
-	var svars = [
+	let svars = [
 		{ bn : "c", sn : "move.ic",     type : SVarType.Number },
 		{ bn : "w", sn : "move.iw",     type : SVarType.Number },
 		{ bn : "a", sn : "toanalyse",   type : SVarType.String },
@@ -177,6 +188,9 @@ function mkindex(S) {
 	// peculiar re-rendering of a mkindex() component.
 	function build() { psrc.build(); pdec.build(); }
 
+	/**
+	 * @param{string} [s]
+	 */
 	function analyse(s) {
 		S.toanalyse = s || getinput()
 		// ic/iw may be coming from bookmark
@@ -186,12 +200,18 @@ function mkindex(S) {
 		dumpbm();
 	}
 
+	/**
+	 * @param{string} [s]
+	 */
 	function search(s) {
 		S.tosearch = s || getinput();
 		presults.build(Data.search(S.tosearch));
 		dumpbm();
 	}
 
+	/**
+	 * @param{string} [s]
+	 */
 	function contains(s) {
 		S.tocontains = s || getinput();
 		presults.build(Data.lscontains(S.tocontains).map(function(x) {
@@ -243,14 +263,18 @@ function mkindex(S) {
 	return p;
 }
 
-function mk(p, tc) {
-	// TODO: document (likely, used when going recursive)
-	tc ||= User.prefs.tabs;
+/**
+ * @param{TabsConf} [tc]
+ * @returns{BuildableHTMLElement}
+ */
+function mk(tc) {
 	return mkindex({
 		stack    : Stack.mk(),
 		move     : Move.mk(),
-		tabsconf : tc,
+		tabsconf : tc ||= User.prefs.tabs,
 		cache    : {},
+		hasstack : false,
+		ts       : [],
 	});
 }
 

@@ -69,9 +69,9 @@ function preload(s) {
  * Load a given hash/dump string.
  *
  * Input:
- *	@param{Object.<any, any>} o  - state object
- *	@param{Array.<SVarDescr>} ss - state variable descriptions
- *	@param{string}            b  - hash/dump string
+ *	@param{Object.<any, any>} o   - state object
+ *	@param{Array.<SVarDescr>} ss  - state variable descriptions
+ *	@param{string}            [b] - hash/dump string
  * Output:
  *	@returns{Object} - o altered (in-place)
  */

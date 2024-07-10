@@ -21,7 +21,8 @@ import { MoveWhat, MoveDir }   from "../../modules/enums.js";
  * NOTE: this is used in mktrbook() to move from piece to
  * piece, hence why it's not confined to mkpcscc()
  *
- * @type{ViewTrBook["getcp"]}
+ * @param{TranslatedBookState} S
+ * @returns{[number, number]}
  */
 function getcp(S) {
 	var n = S.move.cw().j;
@@ -34,8 +35,19 @@ function getcp(S) {
 	return [-1, -1];
 }
 
+/**
+ * We're using the same mkpcscc() to handle both the source
+ * and the translated book.
+ *
+ * The "n" parameter will thus picks on S the data relevant to
+ * either the source or translated book.
+ *
+ * @param{TranslatedBookState} S
+ * @param{{ pcs : () => Pieces, cc : (ic ?: number) => Chunk, hlcw ?: boolean}} n
+ * @returns{BuildableHTMLElement}
+ */
 function mkpcscc(S, n) {
-	var p = document.createElement("div");
+	var p = Dom.mkbuildable("div");
 
 	function build() {
 		// We need utf8 character arrays for slicing
@@ -54,20 +66,20 @@ function mkpcscc(S, n) {
 	}
 
 	// TODO (disabled)
-		/**
+		/*
 		 * Add a new piece separator in p at the given offset i.
 		 *
-		 * @type{ViewTrBook["pcut"]}
+		 * type{ViewTrBook["pcut"]}
 		 */
 /*
 		pcut : function(p, i) {
 			return Utils.orderedinsert(p[T.m.ic], i);
 		},
 */
-		/**
+		/*
 		 * Remove piece separator at offset i from p.
 		 *
-		 * @type{ViewTrBook["pjoin"]}
+		 * type{ViewTrBook["pjoin"]}
 		 */
 /*
 		pjoin : function(p, i) {
@@ -81,7 +93,7 @@ function mkpcscc(S, n) {
 	 * Return true if we source and translation are
 	 * both cut into the same amount of pieces.
 	 *
-	 * @type{ViewTrBook["piecesok"]}
+	 * @type{() => boolean}
 	 */
 	function piecesok() {
 		return S.srcpcs[S.move.ic].length == S.trpcs[S.move.ic].length;
@@ -96,7 +108,7 @@ function mkpcscc(S, n) {
 	 *       per letter in ptr/psrc. Changing chunk actually gives
 	 *       an idea of how slow the process is.
 	 *
-	 * @type{ViewTrBook["hlps"]}
+	 * @type{() => void}
 	 */
 	function hlps() {
 		var c0 = piecesok() ? Classes.okep : Classes.koep;
@@ -119,7 +131,7 @@ function mkpcscc(S, n) {
 	/**
 	 * Highlight current word.
 	 *
-	 * @type{ViewTrBook["hlcw"]}
+	 * @type{() => void}
 	 */
 	function hlcw() {
 		var x = getcp(S)[0];
@@ -152,7 +164,7 @@ function mkpcscc(S, n) {
 	/**
 	 * Remove highlight on current word.
 	 *
-	 * @type{ViewTrBook["llcw"]}
+	 * @type{() => void}
 	 */
 /*
 	function llcw() {
@@ -168,11 +180,9 @@ function mkpcscc(S, n) {
 
 	/**
 	 * Highlight current piece.
-	 *
-	 * @type{ViewTrBook["hlcp"]}
 	 */
 	function hlcp() {
-		var x = getcp(S)[0];
+		let x = getcp(S)[0];
 		p.children[x].classList.add(Classes.hlcp);
 		Dom.scrollintoview(p, x);
 	}
@@ -180,7 +190,7 @@ function mkpcscc(S, n) {
 		/**
 		 * Remove highlight on current piece.
 		 *
-		 * @type{ViewTrBook["llcp"]}
+		 * @type{() => void}
 		 */
 /*
 		llcp : function() {
@@ -191,18 +201,7 @@ function mkpcscc(S, n) {
 		},
 */
 
-	function listenmousemove() {
-		p.addEventListener("click", function (e) {
-			// Those are handled by handlepiece() (TODO)
-			if (e.ctrlKey) return;
-
-			var x = Dom.countbyteoffset(e, p);
-			if (!x) e.stopPropagation();
-			else    e.payload = { offset : x[2] };
-		});
-	}
-
-	function setup() { listenmousemove(); }
+	function setup() { View.listenmousemove(p); }
 
 	setup();
 
@@ -211,8 +210,12 @@ function mkpcscc(S, n) {
 	return p;
 }
 
+/**
+ * @param{TranslatedBookState} S
+ * @returns{Promise<MovableBuildableHTMLElement>}
+ */
 function mktrbook(S) {
-	var p = document.createElement("div");
+	var p = Dom.mkmovablebuildable("div");
 
 	var svars = [
 		{ bn : "c", sn : "move.ic", type : SVarType.Number },
@@ -225,32 +228,38 @@ function mktrbook(S) {
 	var pcn      = ViewBook.mkcn(S);
 	var psrc     = mkpcscc(S, {
 		pcs  : function()   { return S.srcpcs;      },
+		/** @type{(ic ?: number) => Chunk} */
 		cc   : function(ic) { return S.move.cc(ic); },
 		hlcw : true,
 	});
-	var pdec     = View.mkstackvcuts(S);
+	var pdec     = View.mkstackvcuts(Object.assign({}, S, {
+		ts : [],
+	}));
 	var ptr      = mkpcscc(S, {
 		pcs : function() { return S.trpcs; },
 		// XXX used to be called trcc (in case); do we need the ic
 		// parameter?
-		cc   : function(ic) { return S.trcs[ic === undefined ? S.move.ic : ic] }
+		/** @type{(ic ?: number) => Chunk} */
+		cc : function(ic) {
+			return S.trcs[ic === undefined ? S.move.ic : ic];
+		}
 	});
 
 	var pnav = document.createElement("div");
 
-		var pnav0 = View.mknav(S, { type : "span", btns : [
+		var pnav0 = View.mknav({ type : "span", btns : [
 			[ "⇦", MoveDir.Prev, MoveWhat.Chunk ],
 			[ "⟵",  MoveDir.Prev, MoveWhat.Piece ],
 			[ "←", MoveDir.Prev, MoveWhat.Word  ]
 		] });
 
-		var ptoc = View.mkmodalbtnwith(S, ViewBook.mktoc(S), { text : "目錄" });
+		var ptoc = View.mkmodalbtnwith(ViewBook.mktoc(S), { text : "目錄" });
 
-		var pnav1 = View.mknav(S, { type : "span", btns : [
+		var pnav1 = View.mknav({ type : "span", btns : [
 			[ "→", MoveDir.Next, MoveWhat.Word  ],
 			[ "⟶",  MoveDir.Next, MoveWhat.Piece ],
 			[ "⇨", MoveDir.Next, MoveWhat.Chunk ]
-		] });
+		]});
 
 		pnav.append(pnav0, ptoc, pnav1);
 
@@ -304,6 +313,10 @@ function mktrbook(S) {
 		});
 	}
 
+	/**
+	 * @param{string} tr - translated book (markdown)
+	 * @param{string} pcs - Pieces, JSON-encoded
+	 */
 	function inittr(tr, pcs) {
 		S.trcs = Data.parseandtok(tr);
 
@@ -344,6 +357,7 @@ function mktrbook(S) {
 	}
 
 	// Wrap S.move.move() to support moving from piece to piece
+	/** @type{MoveFun} */
 	function move(d, w) {
 		if (w != "piece") return S.move.move(d, w);
 
@@ -354,11 +368,15 @@ function mktrbook(S) {
 		 * which is never asserted/tested anywhere (still true?)
 		 */
 		if (d == MoveDir.Prev) return (i == 0)
+			// @ts-ignore
 			? S.move.move(MoveDir.Prev, MoveWhat.Chunk)
+			// @ts-ignore
 			: S.move.move(MoveDir.Offset, S.srcpcs[S.move.ic][i]-1);
 
 		else return (j == S.srcpcs[S.move.ic].length-1)
+			// @ts-ignore
 			? S.move.move(MoveDir.Next, MoveWhat.Chunk)
+			// @ts-ignore
 			: S.move.move(MoveDir.Offset, S.srcpcs[S.move.ic][j]+1);
 	}
 
@@ -367,18 +385,26 @@ function mktrbook(S) {
 	p.move  = move;
 
 	setup();
-	return init().then(function() { return p; });
+	return init().then(function() { return /** @type{MovableBuildableHTMLElement} */ (p); });
 }
 
-function mk(p, tc) {
-	// TODO: document (likely, used when going recursive)
-	tc ||= User.prefs.tabs;
-
+/**
+ * @param{TabsConf} [tc]
+ * @returns{Promise<MovableBuildableHTMLElement>}
+ */
+function mk(tc) {
 	return mktrbook({
 		stack    : Stack.mk(),
 		move     : Move.mk(),
-		tabsconf : tc,
+		// TODO: document (likely, used when going recursive)
+		tabsconf : tc ||= User.prefs.tabs,
 		cache    : {},
+		hasstack : false,
+		trcs     : [],
+		trpcs    : [],
+		srcpcs   : [],
+		book     : "",
+		ts       : [],
 	});
 }
 

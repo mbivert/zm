@@ -1,6 +1,6 @@
-import * as DB   from "./modules/db.js";
-import * as Data from "./modules/data.js";
-import * as Node from "./modules/node.js";
+import * as DB   from "../modules/db.js";
+import * as Data from "../modules/data.js";
+import * as Node from "../modules/node.js";
 
 /*
  * Quick script to check that we can read data/

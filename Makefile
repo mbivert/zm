@@ -53,9 +53,9 @@ checkdeps: ./bin/checkdeps.sh
 
 # TODO: disabled
 .PHONY: typecheck
-typecheck: lib.d.ts ./mksite.js ./mkshuowen.js ./tests/*.js \
+typecheck: lib.d.ts ./bin/mksite.js ./bin/mkshuowen.js ./tests/*.js \
 		./tests/*/*/*.js ./modules/*.js ./modules/*/*.js    \
-		./modules/*/*/*.js ./mkabout.js
+		./modules/*/*/*.js ./bin/mkabout.js
 	@# fd dance and sed(1) to get "clickable" error messages/proper exit status
 	@t=/tmp/zmt.tmp; x=1; tsc ${TSC_CHECK_OPTS} $? 2>&1 > $$t && x=0; sed 's/(/:/;s/,/:/' $$t;  rm $$t; exit $$x
 
@@ -67,9 +67,9 @@ config: ./bin/mkconfigjs.sh
 	@sh ./bin/mkconfigjs.sh "${ROOT}" "${VERSION}"
 
 .PHONY: tests
-tests: typecheck ./tests.js ./modules/enums.js
+tests: typecheck ./bin/tests.js ./modules/enums.js
 	@echo Running tests...
-	@node ./tests.js
+	@node ./bin/tests.js
 
 # Like site, but without typechecking, site-data/data;
 # Used for pure js dev sessions.
@@ -79,7 +79,7 @@ quick-site: config site/base/pako.min.js ./modules/enums.js \
 		site/base/full.js
 	@echo "Re(creating) website..."
 	@rm -rf ./site-ready/
-	@VERSION=${VERSION} ROOT=${ROOT} node mksite.js ./site/ ./site-ready/
+	@VERSION=${VERSION} ROOT=${ROOT} node ./bin/mksite.js ./site/ ./site-ready/
 
 .PHONY: site
 site: typecheck check-data config site/base/pako.min.js  \
@@ -89,9 +89,9 @@ site: typecheck check-data config site/base/pako.min.js  \
 		quick-site
 
 .PHONY: zm-data
-zm-data:
+zm-data: ./bin/setupzmdata.sh
 	@echo Setup data/...
-	@sh setupzmdata.sh ./data "${ZM_DATA}"
+	@sh ./bin/setupzmdata.sh ./data "${ZM_DATA}"
 
 .PHONY: site-data
 site-data: data bin/mksitedata.sh
@@ -104,31 +104,31 @@ data: zm-data data/dict/cc-cedict.csv data/dict/cc-cedict-singles.csv \
 	data/big5/big5.csv data/decomp/wm-decomp.csv data/decomp/chise.csv \
 	data/dict/cfdict.csv data/dict/handedict.csv data/dict/openrussian.csv
 
-check-data: ./modules/db.js ./modules/enums.js data ./check-data.js data
+check-data: ./modules/db.js ./modules/enums.js data ./bin/check-data.js data
 	@echo Ensure data files are loadable...
-	@node ./check-data.js
+	@node ./bin/check-data.js
 
 dev-site: dev site
 quick-dev-site: dev quick-site
 
-./site/content/about.html: ./mkabout.js ./modules/db.js
+./site/content/about.html: ./bin/mkabout.js ./modules/db.js
 	@echo "Re(creating) about.html..."
-	@node ./mkabout.js > ./site/content/about.html
+	@node ./bin/mkabout.js > $@
 
 ./site/base/full.js: modules/*.js modules/*/*.js modules/*/*/*.js
 	@tsc ${TSC_GEN_OPTS} --outFile ./site/base/full.js modules/*.js modules/*/*.js modules/*/*/*.js
 
-./modules/enums.js: ./mkenumsjs.sh ./lib.d.ts
-	@echo Creating enums.js...
-	@sh ./mkenumsjs.sh
+./modules/enums.js: ./bin/mkenumsjs.sh ./lib.d.ts
+	@echo Creating $@...
+	@sh ./bin/mkenumsjs.sh ./lib.d.ts > $@
 
-./modules/db.js: schema.sql
-	@echo Creating db.js...
-	@sh ./mkdbjs.sh
+./modules/db.js: ./schema.sql ./bin/mkdbjs.sh
+	@echo Creating $@...
+	@sh ./bin/mkdbjs.sh ./schema.sql > .$@
 
-./tests.js: ./mktestsjs.sh ./tests/*.js ./tests/*/*/*.js
-	@echo Creating tests.js...
-	@sh ./mktestsjs.sh
+./bin/tests.js: ./bin/mktestsjs.sh ./tests/*.js ./tests/*/*/*.js
+	@echo Creating $@...
+	@sh ./bin/mktestsjs.sh > $@
 
 site/base/pako.min.js:
 	@echo Getting pako...

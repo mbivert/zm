@@ -11,10 +11,9 @@ expected implementation complexity.
 A small amount of old/unsorted items are located at the end of the file.
 
 Current goals:
-  - Restore static typing annotation.
-  	definition anymore.
   - Test @better-modules
-  - Make a SPA, and remove the book vs. trbook vs. index stuff.
+  - Make a SPA, and remove the book vs. trbook vs. index stuff
+  - Rework the UI typing (to be done after the SPA).
 
 Major user features:
   - @multilang

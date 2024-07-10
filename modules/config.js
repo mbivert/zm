@@ -2,6 +2,6 @@
 var root    = "";
 
 /** @type{number} */
-var version = 1720645736;
+var version = 1720652440;
 
 export { root, version };

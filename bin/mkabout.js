@@ -3,9 +3,9 @@
  * Generated from what we currently have in database; could be
  * prettier but does the job.
  */
-import * as DB     from "./modules/db.js";
-import * as Assert from "./modules/assert.js";
-import * as Config from "./modules/config.js";
+import * as DB     from "../modules/db.js";
+import * as Assert from "../modules/assert.js";
+import * as Config from "../modules/config.js";
 
 /**
  * Data type : [[name, url, license, license url], ...]

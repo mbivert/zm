@@ -1,4 +1,4 @@
-/* Automatically generated; see Makefile & mkdbjs.sh */
+/* Automatically generated; see ../Makefile & ../bin/mkdbjs.sh */
 
 // Improperly typed because of enums
 // @ts-ignore

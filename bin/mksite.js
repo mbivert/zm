@@ -4,8 +4,8 @@
  * We may want to upgrade to something more refined later,
  * for now this does the job.
  */
-import * as Node   from './modules/node.js'
-import * as Config from './modules/config.js'
+import * as Node   from '../modules/node.js'
+import * as Config from '../modules/config.js'
 
 // @ts-ignore
 import * as path   from 'path';
@@ -142,6 +142,7 @@ if (process.argv.length < 3) {
 // @ts-ignore
 var [input, output]  = [process.argv[2], process.argv[3]];
 
+// XXX fear.
 Node.system("rm -rf "+output);
 Node.system("cp -rf "+input+"/base "+output)
 mksite(site, input, output);

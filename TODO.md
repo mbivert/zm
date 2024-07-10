@@ -15,15 +15,16 @@ Current goals:
   - Make a SPA, and remove the book vs. trbook vs. index stuff
   - Rework the UI typing (to be done after the SPA).
 
-Major user features:
+Major user features (~expected order):
+  - @flexible-view (see @better-cut)
+  - @backend
+  - @prefs-edition
   - @multilang
     - http://etym.org/
     - /home/mb/Downloads/etymwn-20130208.zip
       - https://www.danielde.dev/blog/surprising-shared-word-etymologies/
       - https://news.ycombinator.com/item?id=27475193
-  - @flexible-view (see @better-cut)
   - @commented-books
-  - @prefs-edition
   - @character-recognition-input
   - @extension
 
@@ -68,6 +69,10 @@ A few identified bugs. SQL database scheme prototype.
 ## small @real-logs
 	We started modules/log.js for debugging purposes; we'd want
 	loglevel to be conditionally enabled.
+
+	Perhaps to be done after @backend: from the few identified
+	use cases, we'll want to keep those logs somewhere for later
+	inspection.
 
 ## small @yellowbridge
 	Add links to
@@ -181,6 +186,13 @@ A few identified bugs. SQL database scheme prototype.
 		https://ctext.org/nine-chapters
 
 	Multiple translations are listed on the wp page.
+
+## small @decomp-unicity
+	Many times, different sources will have the same decomposition:
+	just display it once.
+
+	It's the only reason why the default setting only display the
+	first decomposition.
 
 ## medium @inline-about
 	In order to increase visibility for a ressources, we could add
@@ -412,22 +424,6 @@ A few identified bugs. SQL database scheme prototype.
 
 	We don't parse yet those special lines, but the data structures
 	have been prepared to carry them (lib.d.ts:/^interface WithSources)
-
-## medium @multidec-per-table @multidec-merge @multidec-patch @decomp-unicity
-	This is implemented, but this point:
-		« We'll also want the ability to avoid displaying twice the same
-		decomposition. »
-
-	We now can have multiple decomposition tables; code also support
-	to various degree the ability to have multiple decomposition in
-	a single table. Yet, only the first decomposition is displayed.
-
-	We'll need to be able to display all available decompositions.
-	Also, we'll want the ability to merge different decomposition table
-	and/or to chain patch them, as we do for dictionaries.
-		If so, we'll also need to adjust our :after indicating number
-		of enabled tab items; perhaps a second counters with colors?
-		Or we just display them like chise-0 chise-1, etc.? (simpler)
 
 ## medium @better-overlap
 	When two words are overlapping, e.g. 'ab' and 'bc', we read either of

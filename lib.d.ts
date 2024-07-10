@@ -653,235 +653,11 @@ interface KMove  {
 type KMoves = Array<KMove>;
 
 /*
- * Abstract "generic" view, allowing to render/unrender "something."
- */
-interface View {
-	svars : SVarDescr[],
-
-	loadbm   : () => void,
-	load     : () => Promise<any>,
-
-	render   : () => void,
-	unrender : () => void,
-
-	renderbm : () => void,
-	loadandrender : () => Promise<any>,
-}
-
-/*
- * word => grid's recursive state
- */
-/*
-interface GridCache {
-	[details: string] : DumpVcuts,
-}
-*/
-
-/*
- * Abstract view containing DOM pointers to render
- * a decomposition grid and a stack of words, typically
- * used to inspect Chinese word found in the decomposition
- * grid.
- */
-/*
-interface ViewWithStackGrid extends View {
-	// Where to display the stack.
-	pstack : HTMLElement,
-
-	// Where to display the decomposition grid.
-	pgrid  : HTMLElement,
-
-	// Stack of currently displayed words in pstack
-	stack  : Array<string>,
-
-	// Current word (stack index) being rendered
-	n : number,
-
-	// Where to store word's current decomposition:
-	// when navigating words/the stack, words decomposition
-	// is cached so that it is displayed as users left
-	// it last time he saw that word.
-	cache  : GridCache,
-
-	// Returns last word on the stack; undefined if stack
-	// is empty.
-	last : () => string|undefined,
-
-	// Returns current word on the stack; undefined if stack
-	// is empty.
-	current : () => string|undefined,
-
-	// Push a word on the stack if it's not already in last
-	// position.
-	push : (w : string) => void,
-
-	// Execute f by going back in the stack until we found word w
-	// No-op if w not found.
-	findback : (w : string, f : (arg0 : number) => void) => void,
-
-	// Delete pointed word from the stack.
-	del : (w : string) => void,
-
-	// Pop the stack until the given word is met
-	popto : (w : string) => void,
-
-	// Set .n by going through the stack until the given word is met
-	backto : (w : string) => void,
-
-	// Cache current element of the stack (the one being decomposed)
-	cachecurrent  : () => void,
-
-	renderstack   : () => void,
-	rendergrid    : () => void,
-	unrenderstack : () => void,
-	unrendergrid  : () => void,
-
-	pushandrender : (w : string) => void,
-}
-*/
-
-/*
- * View allowing to display a single word/character.
- *
- * Main difference with ViewWithStackGrid is that ViewSingle
- * has an implemented cw() method; not an abstract interface then.
- * (TODO: clarify: whis is there no cw() in here then?)
- */
-/*
-interface ViewSingle extends ViewWithStackGrid {
-}
-
-interface ViewMovable extends ViewWithStackGrid {
-	m               : Movable,
-
-	// m.cw() as a string
-	cw              : () => string,
-
-	// Load/render/unrender current chunk. All abstract.
-	loadcc          : () => void,
-	rendercc        : () => void,
-	unrendercc      : () => void,
-
-	// By default, m.move(); we allow it to be tweaked (cf. ViewTrBook)
-	move            : (d : MoveDir, w : (MoveWhat|number)) => [number, number],
-
-	// move() + render()
-	moveandrender   : (d : MoveDir, w : (MoveWhat|number)) => void,
-
-	// m.init() + render()
-	updateandrender : (cs : Array<TokedChunk>, ic ?: number, iw ?: number) => void,
-}
-*/
-/*
- * Abstract view containing DOM pointers to render
- * navigation button, alongside a textual description
- * of such buttons.
- */
-/*
-interface ViewWithNav extends ViewMovable {
-	psrc  : HTMLElement,
-	pnav  : HTMLElement,
-	btns  : NavBtns,
-	kmvs  : KMoves,
-	skip ?: HTMLElement,
-}
-
-interface ViewSingleNav extends ViewMovable, ViewWithNav {
-	loadhandlers : () => void,
-}
-*/
-
-/*
- * Rendered moveable (psrc) on user provided input (pinput)
- */
-/*
-interface ViewIndex extends ViewMovable, ViewWithNav {
-	pinput    : HTMLTextAreaElement, // We need .value, which is not on HTMLElement.
-	panalyse  : HTMLElement,
-	psearch   : HTMLElement,
-	presults  : HTMLElement,
-
-	// Expression being searched and displayed/to be displayed in
-	// presults. This is mainly for bookmarking purposes.
-	expr      : string,
-
-	loadhandlers : () => void,
-	loadexpr     : () => void,
-	loadinput    : () => void,
-}
-
-interface ViewABook extends ViewMovable, ViewWithNav {
-	book  : string, // book id/name
-
-	// book related files to be downloaded
-	getfns : () => Array<string>,
-
-	pchap : HTMLElement,
-	psec  : HTMLElement,
-	pcn   : HTMLElement,
-	ptoc  : HTMLElement,
-
-	ptocb : HTMLElement,
-
-	hlcw : () => void,
-	llcw : () => void,
-
-	preloadcc : () => void,
-	doloadcc  : () => void,
-
-	// XXX weird, typescript rejects, not sure why
-	getccs   : () => string[], // [string, string],
-
-	// current chapter/section (pchap/psec)
-	renderchapsec : () => void,
-
-	// chunk counter (pcn)
-	rendercn : () => void,
-
-	fetch : () => Promise<Array<string>>,
-
-	handletoc    : () => void,
-
-	loadbook     : (xs : Array<string>) => void,
-	loadtoc      : () => void,
-	loadhandlers : () => void,
-}
-
-interface ViewBook extends ViewABook {
-	loadhandlers : () => void,
-}
-*/
-
-/*
  * p[i][j]: there is a piece separator in the i-th chunk
  * at the j-th position.
  */
 type Pieces = Array<Array<number>>
 
-/*
-interface ViewTrBook extends ViewABook {
-	trcs   : Array<TokedChunk>,
-	trpcs  : Pieces,
-	srcpcs : Pieces,
-
-	ptr    : HTMLElement,
-
-	getcp    : () => [number, number],
-
-	trcc     : (ic ?: number) => Chunk,
-
-	pcut     : (p : Pieces, i : number) => any,
-	pjoin    : (p : Pieces, i : number) => any,
-
-	piecesok : () => boolean,
-
-	hlps : () => void,
-	hlcp : () => void,
-	llcp : () => void,
-
-	loadhandlers : () => void,
-}
-*/
 /*
  * Formattable external link.
  */
@@ -987,29 +763,6 @@ interface UserPrefs {
 	books ?: BooksConf,
 }
 
-/*
- * Grid dumping for local caching.
- *
- * TODO: This should be deprecated.
- */
-/*
-interface DumpView {
-	ic   : number,
-	iw   : number,
-	dump : DumpVcuts,
-}
-
-type DumpDecomp = [string, DumpVcuts];
-type DumpData   = [string, DumpView|undefined];
-
-interface DumpVcut {
-	dec : DumpDecomp,
-	dat : DumpData,
-}
-
-type DumpVcuts = Array<DumpVcut>;
-*/
-
 interface Stack {
 	// Stack of currently displayed words in pstack
 	xs  : Array<string>,
@@ -1047,7 +800,9 @@ interface Stack {
 }
 
 /*
- * TODO
+ * TODO: The UI typing needs to be cleaned and clarified.
+ * The first (implemented) step was to get the UI to work,
+ * and the typechecking to pass.
  */
 
 // tabitms -> tabitm

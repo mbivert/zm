@@ -7,6 +7,18 @@ First paragraph of each closed entry contains a closing statement.
 
 # Entries
 
+## medium @multidec-per-table @multidec-merge @multidec-patch
+	We now can have multiple decomposition tables; code also support
+	to various degree the ability to have multiple decomposition in
+	a single table. /* Yet, only the first decomposition is displayed. */
+
+	We'll need to be able to display all available decompositions.
+	Also, we'll want the ability to merge different decomposition table
+	and/or to chain patch them, as we do for dictionaries.
+		If so, we'll also need to adjust our :after indicating number
+		of enabled tab items; perhaps a second counters with colors?
+		Or we just display them like chise-0 chise-1, etc.? (simpler)
+
 ## medium @better-grid-cache @partial-dumping
 	2024-07-09: irrelevant since @view-hierarchy
 

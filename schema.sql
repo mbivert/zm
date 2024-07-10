@@ -9,7 +9,7 @@
 -- This is a preemptive attempt to normalize our data management.
 -- For now, this is converted to JSON through SQLite, and injected
 -- to JavaScript; later on, a similar operation is expected to be performed
--- through an AJAX call.
+-- through an AJAX calls.
 --
 -- The goal here is to draft data-related upcoming features, and
 -- to start sketching our SQL database format.

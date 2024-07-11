@@ -44,14 +44,12 @@ help:
 	@echo "typecheck      : run static typechecking via tsc(1)"
 	@echo "data           : update data/* files"
 
-# TODO: isolate in a script
 .PHONY: checkdeps
 checkdeps: ./bin/checkdeps.sh
 	@echo "Looking for dependencies..."
 	@sh ./bin/checkdeps.sh
 	@echo All dependencies found
 
-# TODO: disabled
 .PHONY: typecheck
 typecheck: lib.d.ts ./bin/mksite.js ./bin/mkshuowen.js ./tests/*.js \
 		./tests/*/*/*.js ./modules/*.js ./modules/*/*.js    \

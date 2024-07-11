@@ -9,6 +9,7 @@ set -e
 which node      > /dev/null
 which tsc       > /dev/null
 which gzip      > /dev/null
+which sqlite3   > /dev/null
 
 # NOTE: jq/curl/git are actually only used for updating data files
 which jq        > /dev/null

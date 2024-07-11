@@ -1,5 +1,7 @@
 #!/bin/sh
 
+set -e
+
 # Temporary script to export pieces of schema.sql to JavaScript.
 
 echo '/* Automatically generated; see ../Makefile & ../bin/mkdbjs.sh */'

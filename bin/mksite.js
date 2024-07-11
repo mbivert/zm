@@ -9,6 +9,8 @@ import * as Config from '../modules/config.js'
 
 // @ts-ignore
 import * as path   from 'path';
+// @ts-ignore
+import * as process   from 'process';
 
 /**
  * Output HTML file header.
@@ -131,15 +133,12 @@ function mksite(site, input, output) {
 /*
  * CLI arguments parsing
  */
-// @ts-ignore
+
 if (process.argv.length < 3) {
-	// @ts-ignore
 	console.log(path.basename(process.argv[1]) +" <path/to/input> <path/to/output>");
-	// @ts-ignore
 	process.exit(1);
 }
 
-// @ts-ignore
 var [input, output]  = [process.argv[2], process.argv[3]];
 
 // XXX fear.

@@ -7,6 +7,9 @@ import * as DB     from "../modules/db.js";
 import * as Assert from "../modules/assert.js";
 import * as Config from "../modules/config.js";
 
+// @ts-ignore
+import * as process   from 'process';
+
 /**
  * Data type : [[name, url, license, license url], ...]
  *
@@ -147,6 +150,14 @@ function footer() {
 `
 }
 
-console.log(header());
+// The raw option allows to only display the HTML, without
+// the header/footer. This is to create ../../zm-data/LICENSE.md.
+let raw = false;
+// @ts-ignore
+if (process.argv.length >= 2 && process.argv[2] == "-r") {
+	raw = true
+}
+
+if (!raw) console.log(header());
 console.log(body());
-console.log(footer());
+if (!raw) console.log(footer());

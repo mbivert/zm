@@ -113,6 +113,10 @@ quick-dev-site: dev quick-site
 	@echo "Re(creating) about.html..."
 	@node ./bin/mkabout.js > $@
 
+${ZM_DATA}/LICENSE.md: ./bin/mkabout.js ./modules/db.js
+	@echo "Re(creating) ${ZM_DATA}/LICENSE.md..."
+	@node ./bin/mkabout.js -r > $@
+
 ./site/base/full.js: modules/*.js modules/*/*.js modules/*/*/*.js
 	@tsc ${TSC_GEN_OPTS} --outFile ./site/base/full.js modules/*.js modules/*/*.js modules/*/*/*.js
 
@@ -122,7 +126,7 @@ quick-dev-site: dev quick-site
 
 ./modules/db.js: ./schema.sql ./bin/mkdbjs.sh
 	@echo Creating $@...
-	@sh ./bin/mkdbjs.sh ./schema.sql > .$@
+	@sh ./bin/mkdbjs.sh ./schema.sql > $@
 
 ./bin/tests.js: ./bin/mktestsjs.sh ./tests/*.js ./tests/*/*/*.js
 	@echo Creating $@...

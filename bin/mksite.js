@@ -82,9 +82,11 @@ function mkhead(t) {
  *	@returns{string} - HTML header as a string.
  */
 function mktail() {
+	let code = `<a href="https://github.com/mbivert/zm/">code</a>`;
+	let data = `<a href="https://github.com/mbivert/zm-data/">data</a>`;
 	return `
 			<div id="footer">
-				<p> © Last update: 2024-03-02 - WIP, Code & data soon available; optimised for desktop</p>
+				<p> © Last update: 2024-07-11 - WIP - ${code} - ${data}; optimized for desktop</p>
 			</div>
 		</div>
 	</body>

@@ -285,7 +285,6 @@ function mktrbook(S) {
 	psave.id     = "save";
 	pfontsave.id = "font-save";
 	ptr.id       = "tr";
-	p.id         = "main";
 
 	p.classList.add("main-trbook");
 

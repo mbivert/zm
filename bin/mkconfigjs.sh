@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Recreate modules/config.js
+# Recreate ./modules/config.js and ./config.json
 
 set -e
 
@@ -24,3 +24,10 @@ var version = $VERSION;
 export { root, version };
 EOF
 
+f="$(dirname $0)/../config.json"
+cat << EOF > "$f"
+{
+	"root"    : "$ROOT",
+	"version" : "$VERSION"
+}
+EOF

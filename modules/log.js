@@ -8,6 +8,12 @@ function debug(s) {
 	console.debug(s);
 }
 
+/** @type{(s : string) => void} */
+function warn(s) {
+	console.warn(s);
+}
+
 export {
 	debug,
+	warn,
 };

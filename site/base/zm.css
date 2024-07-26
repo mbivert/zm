@@ -22,7 +22,14 @@ img {
  *	</body>
  */
 
-/* Delegate scrolling to body's elements */
+/*
+ * Delegate scrolling to body's elements
+ *
+ * NOTE: we're hand-unrolling this for some
+ * pages (about, books, help); it's kinda clumsy,
+ * and perhaps we could tweak something out of CSS's :has()
+ *	https://developer.mozilla.org/en-US/docs/Web/CSS/:has
+ */
 html, body {
 	height   : 100%;
 	overflow : hidden;

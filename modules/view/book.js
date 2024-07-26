@@ -101,13 +101,31 @@ function setup(S, p, psrc, ptoc, qs, navtype, svars) {
 	 */
 	function movehandler(e) {
 		qs.forEach(function(q) { q.build(); });
-		document.location.hash = Bookmark.dump(S, svars);
+		// NOTE: if we write to document.location.hash, we'll
+		// generate a popstate event that will be caught by
+		// spa.js everytime we move around.
+		//
+		// It seems we can't distinguish that popstate from
+		// a regular movement in history, so it's best to avoid
+		// generating it in the first place, so that we can
+		// actually manage history movement in spa.js.
+		//
+		// It feels a bit brittle, and is inefficient, as we'll
+		// use SPA.navigate() instead of moving around a book
+		// when the history points to a different position in a
+		// book, and not to another page.
+//		document.location.hash = Bookmark.dump(S, svars);
+		history.pushState(null, null, document.location.pathname + "#" + Bookmark.dump(S, svars));
 	}
 
 	p.addEventListener("zm-nav-move", movehandler);
 
+	/*
+	 * NOTE: because of the SPA, we could even not do that
+	 * anymore. This avoids rebuilding the page though.
+	 */
 	Dom.alisten(Classes.tocentry, function(e) {
-		e.preventDefault();
+		console.log(e);
 		if (!(e.target instanceof HTMLAnchorElement)) {
 			Assert.assert("ToC entry is not a <a>");
 			return;
@@ -119,7 +137,7 @@ function setup(S, p, psrc, ptoc, qs, navtype, svars) {
 		}
 		var c = parseInt(b.c);
 		if (isNaN(c) || c > S.move.cn()) {
-			Assert.assert("Toc entry's c NaN or too great");
+			Assert.assert("Toc entry's c NaN or too great ("+c+")");
 			return;
 		}
 		[S.move.ic, S.move.iw] = [c, 0];
@@ -128,7 +146,9 @@ function setup(S, p, psrc, ptoc, qs, navtype, svars) {
 		movehandler();
 		// XXX fragile
 		Dom.hide(/** @type{HideableHTMLElement} */ (ptoc.children[1]));
-	});
+		console.log("oook");
+		return false;
+	}, ptoc);
 }
 
 /**
@@ -212,7 +232,6 @@ function mkbook(S) {
 	pfont.id     = "font"
 	psave.id     = "save";
 	pfontsave.id = "font-save";
-	p.id         = "main";
 
 	p.classList.add("main-book");
 

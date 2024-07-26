@@ -4,6 +4,7 @@
 
 import * as Assert  from "../modules/assert.js";
 import * as Classes from "../modules/classes.js";
+import * as Log     from "../modules/log.js";
 
 /**
  * Display the element pointed by x.
@@ -183,12 +184,21 @@ function mkselect(xs) {
  *
  * @param{string}                c - class on which we want to registers click events.
  * @param{(e : PointerEvent) => (boolean|void)} f - event handler
- * @param{HTMLElement}           [p] - where to attach handler [default: document]
+ * @param{HTMLElement}           p - where to attach handler [default: document]
  *
  * @returns{void}
  */
 function alisten(c, f, p) {
-	(p || document).addEventListener("click",
+	/*
+	 * NOTE: p used to be an optional parameter, that would default
+	 * to document. However, because of the SPA, we don't want listeners
+	 * to persists upon page changes. We can't use getbyid("main")
+	 * either, because usually when we register events, we're
+	 * still building the page, and the current id="main" is the
+	 * old page to be replaced.
+	 */
+
+	p.addEventListener("click",
 		/** @type{(e : Event) => (boolean)} */
 		function(e) {
 			if (!(e.target instanceof HTMLElement)) return true;
@@ -199,7 +209,8 @@ function alisten(c, f, p) {
 			// TODO: this should work, but things are expected to break
 			e.preventDefault(); if ((b = f(e)) === false) e.stopPropagation();
 			return b || false;
-		});
+		}
+	);
 }
 
 /**
@@ -527,7 +538,7 @@ function loadfont(p) {
 		// yet: error TS2339: Property 'add' does not exist on type 'FontFaceSet'.
 		// @ts-ignore
 		document.fonts.add(x);
-		getbyid("main").style.fontFamily = n;
+		document.body.style.fontFamily = n;
 		return true;
 	}).catch(function(e) {
 		alert(e);
@@ -612,7 +623,7 @@ function mkbuildable(t) {
  * Wraps the creation of an HTMLElement equipped a "build()"
  * and a "move()" methods. Agaain, this is to isolate typescript noise.
  *
- * @param{string} t
+ * @param{string} tag
  * @returns{MovableBuildableHTMLElement}
  */
 function mkmovablebuildable(t) {
@@ -624,6 +635,18 @@ function mkmovablebuildable(t) {
 	return /** @type{MovableBuildableHTMLElement} */ (p);
 }
 
+/**
+ * Set the page's <title></title>'s content.
+ *
+ * @param{string} s
+ * @returns{void}
+ */
+function settitle(s) {
+	let xs = document.getElementsByTagName("title");
+	if (xs.length == 0)
+		Assert.assert("No <title></title> element!")
+	xs[0].textContent = s;
+}
 
 export {
 	isshown,
@@ -665,4 +688,6 @@ export {
 
 	mkbuildable,
 	mkmovablebuildable,
+
+	settitle,
 };

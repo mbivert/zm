@@ -236,11 +236,12 @@ function mkindex(S) {
 
 		// We have defword in presults; stack them on click
 		Dom.alisten(Classes.defword, function(e) {
-			var q = Dom.gettarget(e);
+			let q = Dom.gettarget(e);
 			// XXX this is pushandbuild from zm-stackgrid's context.
 			if (S.stack.push(q.innerText))
 				pdec.build();
-		});
+			return false;
+		}, p);
 
 		p.addEventListener("zm-nav-move", function(e) {
 			dumpbm();

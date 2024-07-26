@@ -7,8 +7,6 @@ ZM_DATA := ../zm-data
 # Timestamp to force browser cache update on .js/.css files.
 VERSION := $(shell /bin/date '+%s')
 
-z = ${HOME}/gits/z
-
 # dev site HTTP port
 port = 8001
 
@@ -30,7 +28,8 @@ TSC_GEN_OPTS = ${TSC_OPTS} --removeComments --module amd
 dev:
 	@echo "Re(starting) local dev server on http://localhost:${port}..."
 	@lsof -i -P -n|awk '/TCP.*'${port}'.*LISTEN/ { print "kill " $$2 }' | sh
-	@nohup python3 -m http.server ${port} -d ./site-ready/ &
+	@#nohup python3 -m http.server ${port} -d ./site-ready/ &
+	@nohup go run server.go &
 	@$(eval ROOT := )
 
 .PHONY: help
@@ -51,9 +50,9 @@ checkdeps: ./bin/checkdeps.sh
 	@echo All dependencies found
 
 .PHONY: typecheck
-typecheck: lib.d.ts ./bin/mksite.js ./bin/mkshuowen.js ./tests/*.js \
-		./tests/*/*/*.js ./modules/*.js ./modules/*/*.js    \
-		./modules/*/*/*.js ./bin/mkabout.js
+typecheck: lib.d.ts ./bin/mkshuowen.js ./tests/*.js \
+		./tests/*/*/*.js ./modules/*.js ./modules/*/*.js  \
+		./modules/*/*/*.js ./lib/*.js
 	@# fd dance and sed(1) to get "clickable" error messages/proper exit status
 	@t=/tmp/zmt.tmp; x=1; tsc ${TSC_CHECK_OPTS} $? 2>&1 > $$t && x=0; sed 's/(/:/;s/,/:/' $$t;  rm $$t; exit $$x
 
@@ -77,7 +76,8 @@ quick-site: config site/base/pako.min.js ./modules/enums.js \
 		site/base/full.js
 	@echo "Re(creating) website..."
 	@rm -rf ./site-ready/
-	@VERSION=${VERSION} ROOT=${ROOT} node ./bin/mksite.js ./site/ ./site-ready/
+	@mkdir ./site-ready/
+	@cp -rf ./site/base/* ./site-ready/
 
 .PHONY: site
 site: typecheck check-data config site/base/pako.min.js  \
@@ -109,16 +109,13 @@ check-data: ./modules/db.js ./modules/enums.js data ./bin/check-data.js data
 dev-site: dev site
 quick-dev-site: dev quick-site
 
-./site/content/about.html: ./bin/mkabout.js ./modules/db.js
-	@echo "Re(creating) about.html..."
-	@node ./bin/mkabout.js > $@
-
-${ZM_DATA}/LICENSE.md: ./bin/mkabout.js ./modules/db.js
+${ZM_DATA}/LICENSE.md:
 	@echo "Re(creating) ${ZM_DATA}/LICENSE.md..."
-	@node ./bin/mkabout.js -r > $@
+	@echo TODO
 
 ./site/base/full.js: modules/*.js modules/*/*.js modules/*/*/*.js
-	@tsc ${TSC_GEN_OPTS} --outFile ./site/base/full.js modules/*.js modules/*/*.js modules/*/*/*.js
+	@tsc ${TSC_GEN_OPTS} --outFile $@ modules/*.js modules/*/*.js modules/*/*/*.js
+	@cat lib/*.js >> $@
 
 ./modules/enums.js: ./bin/mkenumsjs.sh ./lib.d.ts
 	@echo Creating $@...

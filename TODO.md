@@ -12,7 +12,18 @@ A small amount of old/unsorted items are located at the end of the file.
 
 Current goals:
   - Test @better-modules
+  	-> Done; promising, to be applied everywhere
+  	-> Once this is done, rewire the ../zm-data/LICENSE.md generation,
+  	which used to be performed by bin/mkabout.js; the code is now
+  	"lost"
+  	-> Make sure tales (zm-as-a-lib) is working fine with it.
+  	-> Expect some minor issues for bin/*.js scripts, as node.js might
+  	struggle to load a bare JS file (...). There are workarounds thought
+  		https://stackoverflow.com/a/14914442
   - Make a SPA, and remove the book vs. trbook vs. index stuff
+  	-> Done on the test website; implement @better-modules, and
+  	deploy the new version on the remote. We'll have to write
+  	a few extra steps in the deployment scripts.
   - Rework the UI typing (to be done after the SPA).
 
 Major user features (~expected order):
@@ -193,6 +204,25 @@ A few identified bugs. SQL database scheme prototype.
 
 	It's the only reason why the default setting only display the
 	first decomposition.
+
+## small @html-body-scrolling
+	We have some CSS to be applied on html & body, essentially
+	depending on the class of the div with id="main". For now
+	this is clumsily managed, but we should be able to get something
+	cleaner via:
+		https://developer.mozilla.org/en-US/docs/Web/CSS/:has
+
+## medium @pages-state @better-history
+	Following the SPA implementation, we've left a few brittle
+	bits around history navigation. For example, when history
+	navigation is about going back and forth within the same
+	book, we're reloading the whole page, while we could be smarter,
+	or perhaps implement history navigation a bit differently.
+
+	We may also be interested in keep pages states, so that when
+	we move away from index and back to it, we restore the page
+	where we left of. It could be as simple as keeping the bookmark
+	hash somewhere.
 
 ## medium @inline-about
 	In order to increase visibility for a ressources, we could add

@@ -1,14 +1,19 @@
-<style>
-	html, body {
-		height   : unset !important;
-		overflow : unset !important;
-	}
-</style>
-<script>window.addEventListener('load', function() {
-	require(["dom"], function(Dom) { Dom.loaded(); });
-});</script>
+let ViewBooks = (function() {
 
-<div id="main" class="main-books">
+/**
+ * For now, just a static list. Eventually, we'll want
+ * to loop on our database, as we do for ./about.js.
+ *
+ * But we'll then have to distinguish between "public" and
+ * "private" books.
+ *
+ * @returns{HTMLElement}
+ */
+function mk() {
+	let p = document.createElement("div");
+	p.classList.add("main-books");
+
+	p.innerHTML = `
 	<p>San Bai Qian:</p>
 	<ul>
 		<li><a href="trbook.html#b=san-zi-jing">Sānzì Jīng (三字經)</a>;</li>
@@ -28,4 +33,19 @@
 	<ul>
 		<li><a href="book.html#b=father-serge-tolstoi">Father Serge, Tolstoï (Отец Сергий, Толстой)</a>.</li>
 	</ul>
-</div>
+`;
+
+	// That's clumsy :shrug
+	document.body.style.height   = "unset";
+	document.body.style.overflow = "unset";
+
+	document.getElementsByTagName("html")[0].style.height   = "unset";
+	document.getElementsByTagName("html")[0].style.overflow = "unset";
+
+	return p;
+}
+
+return {
+	"mk" : mk,
+};
+})();

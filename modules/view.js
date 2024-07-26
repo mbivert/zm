@@ -1291,7 +1291,7 @@ function mkmodalbtnwith(r, n) {
 		});
 	}
 
-	// NOTE: used for toc in pnav in book.js
+	// NOTE: used for toc in pnav in view/book.js
 	// TODO: f is useless, we could just create the element first
 	// and thus avoid this
 	function build() {

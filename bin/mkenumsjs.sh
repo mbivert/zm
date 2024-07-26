@@ -12,14 +12,14 @@ PATH=/bin:/usr/bin:/usr/local/bin:$PATH
 # reformat them.
 awk '/^declare enum/{p=1}p{print}/^}/{p=0}' $1 | \
 	sed '/^declare enum/{
-		s/declare enum/var/
+		s/declare enum/let/
 		s/{$/= {/
 	}
 	/^[ 	]/s/=/:/
 	/^}$/s/$/;\n/'
 
 # Create export block
-awk '
-	BEGIN{ print "export {" }
-	/^declare enum/{ print "\t" $3 "," }
-	END{ print "};" }' $1
+#awk '
+#	BEGIN{ print "return {" }
+#	/^declare enum/{ printf("\t\"%s\" : %s,\n", $3, $3) }
+#	END{ print "};" }' $1

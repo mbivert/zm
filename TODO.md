@@ -12,7 +12,8 @@ A small amount of old/unsorted items are located at the end of the file.
 
 Current goals:
   - Test @better-modules
-  	-> Done; promising, to be applied everywhere
+  	-> Applied everywhere
+  		-> Navigation (arrows) on index seems awfully slow?
   	-> Once this is done, rewire the ../zm-data/LICENSE.md generation,
   	which used to be performed by bin/mkabout.js; the code is now
   	"lost"

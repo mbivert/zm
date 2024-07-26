@@ -39,9 +39,9 @@
 }
 
 .zhongmu-descr {
-	padding-bottom : 5px;
-	margin-bottom  : 5px;
-	display        : grid;
+	padding-bottom        : 5px;
+	margin-bottom         : 5px;
+	display               : grid;
 	grid-template-columns : 1fr;
 	grid-template-rows    : auto;
 }

@@ -50,7 +50,6 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 		<link type="text/css" rel="stylesheet" href="{{ .root }}/show.css?v={{ .version }}" />
 
 		<script src="{{ .root }}/pako.min.js?v={{ .version }}"></script>
-		<script src="{{ .root }}/require.min.js?v={{ .version }}"></script>
 		<script src="{{ .root }}/full.js?v={{ .version }}"></script>
 
 		<meta name="description" content="Chinese character deep recursive inspection" />

@@ -12,16 +12,20 @@ if [ -z "$2" ]; then
 	exit 1
 fi
 
-f="$(dirname $0)/../modules/config.js"
+f="$(dirname $0)/../lib/config.js"
 
 cat << EOF > "$f"
-/** @type{string} */
-var root    = "$ROOT";
+let Config = (function() {
 
-/** @type{number} */
-var version = $VERSION;
+return {
+	/** @type{string} */
+	"root"    : "$ROOT",
 
-export { root, version };
+	/** @type{number} */
+	"version" : $VERSION,
+};
+
+})();
 EOF
 
 f="$(dirname $0)/../config.json"

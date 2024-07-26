@@ -1,10 +1,6 @@
-import * as Markdown from "../../../modules/data/book/markdown.js";
-import * as Cut      from "../../../modules/cut.js";
-import * as Tests    from "../../../modules/tests.js";
+let TestsMarkdown = (function() {
 
-import { ChunkType } from '../../../modules/enums.js'
-
-var tests = [
+let tests = [
 	{
 		f        : Markdown.parse,
 		args     : [""],
@@ -110,4 +106,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

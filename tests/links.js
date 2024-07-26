@@ -1,4 +1,4 @@
-import * as Links    from '../modules/links.js'
+let TestsLinks = (function() {
 
 /**
  * Local utf8 to Big5 converter, to avoid relying on Data.
@@ -10,11 +10,11 @@ import * as Links    from '../modules/links.js'
  * @type{(arg0 : string) => string}
  */
 function u2b(c) {
-	var x = c.codePointAt(0);
+	let x = c.codePointAt(0);
 	if (!x) return "";
-	var y = "0x"+x.toString(16).toUpperCase();
+	let y = "0x"+x.toString(16).toUpperCase();
 	/** @type{Object<string, string>} */
-	var h = { "0x5B78" : "0xBEC7" };
+	let h = { "0x5B78" : "0xBEC7" };
 	return h[y] || "";
 }
 
@@ -24,7 +24,7 @@ function u2b(c) {
  *
  * @type{Links}
  */
-var links = {
+let links = {
 	"en.wiktionary.org" : {
 		"fmt"  : "https://en.wiktionary.org/wiki/${w}",
 	},
@@ -255,6 +255,6 @@ var tests = [
 	},
 ];
 
-export {
-	tests,
-};
+return { "tests" : tests };
+
+})();

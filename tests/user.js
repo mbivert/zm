@@ -1,8 +1,6 @@
-import * as User       from "../modules/user.js";
+let TestsUser = (function() {
 
-import { TabType } from "../modules/enums.js";
-
-var tests = [
+let tests = [
 	{
 		f        : User.getnames,
 		args     : [{}],
@@ -287,4 +285,6 @@ var tests = [
 	},
 ];
 
-export { tests, };
+return { "tests" : tests };
+
+})();

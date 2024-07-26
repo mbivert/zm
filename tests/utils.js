@@ -1,7 +1,6 @@
-import * as Utils from '../modules/utils.js'
-import * as Tests from '../modules/tests.js'
+let TestsUtils = (function() {
 
-var tests = [
+let tests = [
 	/*
 	 * Utils.haschinese()
 	 */
@@ -315,4 +314,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

@@ -1,9 +1,7 @@
-import * as WikiSource from "../../../modules/data/book/wikisource.js";
-
-import { ChunkType } from "../../../modules/enums.js";
+let TestsWikiSource = (function() {
 
 /** @type{Tests} */
-var tests = [
+let tests = [
 	/*
 	 * parse()
 	 *
@@ -560,4 +558,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

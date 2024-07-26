@@ -1,12 +1,7 @@
-import * as Move     from '../modules/move.js'
-import * as Markdown from '../modules/data/book/markdown.js'
-import * as Utils    from '../modules/utils.js'
-import * as Data     from '../modules/data.js'
-
-import { MoveWhat, MoveDir } from '../modules/enums.js'
+let TestsMove = (function() {
 
 /** @type{Movable} */
-var m = Move.mk();
+let m = Move.mk();
 
 /** @type{(s : string, d : string) => void} */
 function init(s, d) {
@@ -20,7 +15,7 @@ function init(s, d) {
  * @type{Movable["move"]}
  */
 function move(d, w) {
-	var [jc, jw] = m.move(d, w);
+	let [jc, jw] = m.move(d, w);
 	if (jc != -1) [m.ic, m.iw] = [jc, jw];
 	return [jc, jw];
 }
@@ -32,13 +27,13 @@ function move(d, w) {
  * @type{(xs : Array<[MoveDir, MoveWhat|number]>) => [number, number]}
  */
 function manymove(xs) {
-	var [jc, jw] = [-1, -1]
+	let [jc, jw] = [-1, -1]
 	for (var i = 0; i < xs.length; i++)
 		[jc, jw] = move(xs[i][0], xs[i][1]);
 	return [jc, jw];
 }
 
-var tests = [
+let tests = [
 	/*
 	 * Movable.move()
 	 */
@@ -159,4 +154,6 @@ var tests = [
 	 */
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

@@ -1,6 +1,6 @@
-import * as Tests from '../modules/tests.js'
+let TestsTests = (function() {
 
-var tests = [
+let tests = [
 	/*
 	 * dcmp()
 	 */
@@ -120,4 +120,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

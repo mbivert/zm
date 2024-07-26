@@ -1,13 +1,12 @@
-import * as WMDecomp from '../../../modules/data/decomp/wmdecomp.js'
-
+let TestsWMDecomp = (function() {
 /*
  * NOTE: it's likely there's a bit of redundancy here.
  */
 
 // shortcut
-var m = WMDecomp.DecompTypeMap;
+let m = WMDecomp.DecompTypeMap;
 
-var tests = [
+let tests = [
 	/*
 	 * WMDecomp.parseline()
 	 */
@@ -307,4 +306,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

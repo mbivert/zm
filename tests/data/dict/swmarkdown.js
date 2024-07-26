@@ -1,7 +1,6 @@
-import * as SWMarkdown from "../../../modules/data/dict/swmarkdown.js";
-import * as CEDict     from "../../../modules/data/dict/cedict.js";
+let TestsSWMarkdown = (function() {
 
-var tests = [
+let tests = [
 	/*
 	 * parse()
 	 */
@@ -54,4 +53,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

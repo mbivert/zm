@@ -1,10 +1,7 @@
-import * as Bookmark from '../modules/bookmark.js'
-import * as Tests    from '../modules/tests.js'
-
-import { SVarType}   from '../modules/enums.js'
+let TestsBookmark = (function() {
 
 /** @type{Array.<Test>} */
-var tests = [
+let tests = [
 	/*
 	 * Bookmark.dump()
 	 */
@@ -173,4 +170,7 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();
+

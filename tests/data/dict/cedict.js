@@ -1,7 +1,6 @@
-import * as CEDict       from '../../../modules/data/dict/cedict.js'
-import * as Tests        from '../../../modules/tests.js'
+let TestsCEDict = (function() {
 
-var tests = [
+let tests = [
 	/*
 	 * NOTE: we used to parse the dict in two steps, a first one transforming
 	 * the dict as an array, and a second one reducing it to a hash.
@@ -280,4 +279,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

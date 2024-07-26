@@ -1,7 +1,6 @@
-import * as Chise from "../../../modules/data/decomp/chise.js";
-import { DecompType } from "../../../modules/enums.js";
+let TestsChise = (function() {
 
-var tests = [
+let tests = [
 	{
 		f        : Chise.parseline,
 		args     : [[{}, undefined], ";; comments are ignored"],
@@ -92,4 +91,6 @@ var tests = [
 	},
 ];
 
-export { tests, };
+return { "tests" : tests };
+
+})();

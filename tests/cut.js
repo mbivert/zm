@@ -1,7 +1,4 @@
-import * as Cut  from "../modules/cut.js";
-import * as Data from "../modules/data.js";
-
-import { TokenType, DecompType } from "../modules/enums.js";
+let TestsCut = (function() {
 
 /**
  * Create placeholder dict entries to simplified tests
@@ -11,7 +8,7 @@ import { TokenType, DecompType } from "../modules/enums.js";
  */
 function p(x) { return { "xx5" : [{ ds : [x] }] }; }
 
-var tests = [
+let tests = [
 	/*
 	 * Cut.getword()
 	 */
@@ -680,4 +677,6 @@ var tests = [
 	},
 ];
 
-export { tests, };
+return { "tests" : tests };
+
+})();

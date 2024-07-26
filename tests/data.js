@@ -1,6 +1,4 @@
-import * as Data       from "../modules/data.js";
-
-import { DecompType, ChunkType, TokenType }  from "../modules/enums.js";
+let TestsData = (function() {
 
 /**
  * Create placeholder dict entries to simplified tests
@@ -263,4 +261,6 @@ var tests = [
 	},
 ];
 
-export { tests };
+return { "tests" : tests };
+
+})();

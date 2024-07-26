@@ -1,6 +1,6 @@
-import * as Dict       from "../../modules/data/dict.js";
+let TestsDict = (function() {
 
-var tests = [
+let tests = [
 	/*
 	 * Dict.chainrm()
 	 */
@@ -149,4 +149,6 @@ var tests = [
 	},
 ];
 
-export { tests, };
+return { "tests" : tests };
+
+})();

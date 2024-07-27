@@ -11,19 +11,22 @@ expected implementation complexity.
 A small amount of old/unsorted items are located at the end of the file.
 
 Current goals:
-  -  Navigation (arrows) on index seems awfully slow, at least since
-  the SPA/better-modules thing?
-  - Make a SPA, and remove the book vs. trbook vs. index stuff
-  	-> deploy the new version on the remote. We'll have to write
-  	a few extra steps in the deployment scripts.
-  - Rework the UI typing (to be done after the SPA).
+  - Clean the setup scripts (auto-restart, automatic emails,
+  regular ping, etc.: we're not serving static pages anymore).
+  Also, rename server.go to zm-backend.go, nohup kinda sucks plus
+  we want a PID file to easily terminate / restart the job, finalize
+  the setup-zm script
+  - sitemap.xml, at least for googleability.
+  - Working on @backend; in particular, the (external) auth module
+  feels good enough, let's try it for real
 
 Major user features (~expected order):
-  - @flexible-view (see @better-cut)
   - @backend
+  - @flexible-view (see @better-cut) / UI-typing
   - @prefs-edition
   - @multilang
     - http://etym.org/
+    - https://www.etymonline.com/columns/post/bio
     - /home/mb/Downloads/etymwn-20130208.zip
       - https://www.danielde.dev/blog/surprising-shared-word-etymologies/
       - https://news.ycombinator.com/item?id=27475193

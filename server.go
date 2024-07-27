@@ -87,7 +87,7 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 			<div id="main"></div>
 			<div id="footer">
 				<p>
-					© Last update: 2024-07-11 - WIP -
+					© Last update: 2024-07-28 - WIP -
 					<a href="https://github.com/mbivert/zm/">code</a> -
 					<a href="https://github.com/mbivert/zm-data/">data</a>;
 					optimized for desktop</p>

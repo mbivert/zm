@@ -92,19 +92,19 @@ tests: typecheck ./bin/tests.js ./lib/enums.js
 # Used for pure js dev sessions.
 .PHONY: quick-site
 quick-site: config site/base/pako.min.js ./lib/enums.js \
-		site/content/about.html site/base/full.js
+		site/content/about.html site/base/full.js server
 	@echo "Re(creating) website..."
 	@rm -rf ./site-ready/
 	@mkdir ./site-ready/
 	@cp -rf ./site/base/* ./site-ready/
+	@cp server      ./site-ready/
+	@cp config.json ./site-ready/
 
 .PHONY: site
 site: typecheck check-data config site/base/pako.min.js  \
 		./lib/enums.js site-data \
 		site/content/about.html site/base/full.js \
-		quick-site server
-	@cp server      ./site-ready/
-	@cp config.json ./site-ready/
+		quick-site
 
 server: server.go
 	@echo Building backend...

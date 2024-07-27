@@ -102,6 +102,7 @@ var usock    string
 var dir      string
 var fastcgi  bool
 var configFn string
+var openbsd  bool
 
 func init() {
 	flag.StringVar(&port,  "p", ":8001", "TCP address to listen to")
@@ -109,6 +110,7 @@ func init() {
 	flag.StringVar(&usock, "u", "", "If set, listen on unix socket over TCP port")
 	flag.BoolVar(&fastcgi, "f", false, "If set, use the UNIX socket and FastCGI")
 	flag.StringVar(&configFn, "c", "config.json", "/path/to/config.json")
+	flag.BoolVar(&openbsd, "o", false, "Tweaks for OpenBSD")
 
 	flag.Parse();
 
@@ -122,6 +124,15 @@ func init() {
 	}
 }
 
+func isDir(path string) (bool, error) {
+	fi, err := os.Stat(path)
+	if err != nil {
+		return false, err
+	}
+
+	return fi.IsDir(), nil
+}
+
 func main() {
 	// Won't change
 	var s strings.Builder
@@ -131,17 +142,36 @@ func main() {
 	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasSuffix(r.URL.Path, ".html") {
+		path := filepath.Clean(r.URL.Path)
+		log.Println("Request to "+path)
+		if path == "/" {
+			path = "/index.html"
+		}
+		fpath := filepath.Join(dir, path)
+		isdir, err := isDir(fpath)
+		if isdir || err != nil {
+			path = "index.html"
+		}
+
+		if strings.HasSuffix(path, ".html") {
 			// Should barely ever happen
 			if _, err := io.WriteString(w, s.String()); err != nil {
 				log.Println(err)
 			}
 		} else {
-			http.ServeFile(w, r, filepath.Join(dir, filepath.Clean(r.URL.Path)))
+			http.ServeFile(w, r, fpath)
 		}
 	})
 
 	if usock != "" {
+		// This isn't needed on Linux thanks to the proper socket closing
+		// which follows, but that dance doesn't appease the OpenBSD go^wdaemons,
+		// so we must remove it (otherwise, fails with a "bind: address already in use")
+		if openbsd {
+		if err := os.RemoveAll(usock); err != nil {
+			log.Fatal(err)
+		}}
+
 		l, err := net.Listen("unix", usock)
 		if err != nil {
 			log.Fatal(err)

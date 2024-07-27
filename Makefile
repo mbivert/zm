@@ -102,7 +102,13 @@ quick-site: config site/base/pako.min.js ./lib/enums.js \
 site: typecheck check-data config site/base/pako.min.js  \
 		./lib/enums.js site-data \
 		site/content/about.html site/base/full.js \
-		quick-site
+		quick-site server
+	@cp server      ./site-ready/
+	@cp config.json ./site-ready/
+
+server: server.go
+	@echo Building backend...
+	@go build $^
 
 .PHONY: zm-data
 zm-data: ./bin/setupzmdata.sh

@@ -11,14 +11,16 @@ package main
  */
 
 import (
-	"net/http"
-	"log"
-	"strings"
-	"path/filepath"
+	"encoding/json"
+	"flag"
 	"html/template"
 	"io"
-	"encoding/json"
+	"log"
+	"net"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 type Config struct {
@@ -93,7 +95,16 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 </html>
 `));
 
+var port  string
+var usock string
+var dir   string
+
 func init() {
+	flag.StringVar(&port,  "p", ":8001", "TCP address to listen to")
+	flag.StringVar(&dir,   "d", "./site-ready/", "HTTP root location")
+	flag.StringVar(&usock, "u", "", "If set, listen on unix socket over TCP port")
+	flag.Parse();
+
 	data, err := os.ReadFile(configFn)
 	if err != nil {
 		log.Fatal("Cannot read '"+configFn+"': ", err)
@@ -105,10 +116,6 @@ func init() {
 }
 
 func main() {
-	// TODO: cli parameters
-	port  := ":8001"
-	dir   := "./site-ready/"
-
 	// Won't change
 	var s strings.Builder
 	indexPageTmpl.Execute(&s, map[string]any{
@@ -127,6 +134,20 @@ func main() {
 		}
 	})
 
-	log.Println("Listening on "+port)
-	log.Fatal(http.ListenAndServe(port, nil))
+	if usock != "" {
+		// otherwise, net.Listen() fails with a "bind: address already in use"
+		if err := os.RemoveAll(usock); err != nil {
+			log.Fatal(err)
+		}
+
+		l, err := net.Listen("unix", usock)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Listening on unix:"+usock)
+		log.Fatal(http.Serve(l, nil))
+	} else {
+		log.Println("Listening on "+port)
+		log.Fatal(http.ListenAndServe(port, nil))
+	}
 }

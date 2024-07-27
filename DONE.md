@@ -7,6 +7,35 @@ First paragraph of each closed entry contains a closing statement.
 
 # Entries
 
+## medium @better-modules
+	2024-07-27: This has been implemented with relative success. There
+	are a few clumsy bits, but we can now access the modules from the
+	JS console, got rid of the require() dependencies, and FWIW, sped
+	up noticibly the full.js generation.
+
+	We can't directly refer to ES6 modules from the dev console,
+	which is annoying to test some code on the fly.
+
+	Here's an alternative; the main issue would be the typing annotations:
+
+		var Module = {};
+		(function() {
+		Module.var = value;
+		Module.set = function() {
+		};
+		// basically, module content here.
+		})()
+
+	Or:
+
+		var Module = (function() {
+			return {
+				...
+			};
+		})();
+
+	Also, do we need to minify the code?
+
 ## medium @multidec-per-table @multidec-merge @multidec-patch
 	We now can have multiple decomposition tables; code also support
 	to various degree the ability to have multiple decomposition in

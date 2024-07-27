@@ -11,13 +11,10 @@ expected implementation complexity.
 A small amount of old/unsorted items are located at the end of the file.
 
 Current goals:
-  - Test @better-modules
-  	-> Applied everywhere
-  		-> Navigation (arrows) on index seems awfully slow?
-  	-> Make sure tales (zm-as-a-lib) is working fine with it.
+  -  Navigation (arrows) on index seems awfully slow, at least since
+  the SPA/better-modules thing?
   - Make a SPA, and remove the book vs. trbook vs. index stuff
-  	-> Done on the test website; implement @better-modules, and
-  	deploy the new version on the remote. We'll have to write
+  	-> deploy the new version on the remote. We'll have to write
   	a few extra steps in the deployment scripts.
   - Rework the UI typing (to be done after the SPA).
 
@@ -752,30 +749,6 @@ A few identified bugs. SQL database scheme prototype.
 	using that definition.
 
 	See also @index-search-tests.
-
-## medium @better-modules
-	We can't directly refer to ES6 modules from the dev console,
-	which is annoying to test some code on the fly.
-
-	Here's an alternative; the main issue would be the typing annotations:
-
-		var Module = {};
-		(function() {
-		Module.var = value;
-		Module.set = function() {
-		};
-		// basically, module content here.
-		})()
-
-	Or:
-
-		var Module = (function() {
-			return {
-				...
-			};
-		})();
-
-	Also, do we need to minify the code?
 
 ## medium @ancient-decomp
 	There *are* some decomposition table for ancient characters, e.g.

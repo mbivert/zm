@@ -14,9 +14,6 @@ Current goals:
   - Test @better-modules
   	-> Applied everywhere
   		-> Navigation (arrows) on index seems awfully slow?
-  	-> Once this is done, rewire the ../zm-data/LICENSE.md generation,
-  	which used to be performed by bin/mkabout.js; the code is now
-  	"lost"
   	-> Make sure tales (zm-as-a-lib) is working fine with it.
   - Make a SPA, and remove the book vs. trbook vs. index stuff
   	-> Done on the test website; implement @better-modules, and

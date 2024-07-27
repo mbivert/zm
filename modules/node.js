@@ -4,11 +4,9 @@
  */
 
 // @ts-ignore
-import * as Fs    from 'fs';
-// @ts-ignore
-import * as Child from 'child_process';
-// @ts-ignore
-import * as Zlib  from 'zlib';
+var Fs    = require('fs')
+var Child = require('child_process');
+var Zlib  = require('zlib');
 
 /**
  * Read an UTF8 file.
@@ -113,11 +111,8 @@ function gzip(s) {
 	return Zlib.gzipSync(s);
 }
 
-export {
-	readf, writef,
-//	mkdir,
-//	readjson, writejson,
-//	lsdir,
-	system,
-//	gzip
-};
+module.exports = {
+	"readf"  : readf,
+	"writef" : writef,
+	"system" : system,
+}

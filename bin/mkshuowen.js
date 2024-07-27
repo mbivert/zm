@@ -4,19 +4,16 @@
  * both in as a dict/ and as a book/.
  */
 
-import * as Node       from "../modules/node.js";
-
-eval(Node.readf("./site/base/full.js")+"");
-
-// @ts-ignore
-import * as path      from 'path';
-// @ts-ignore
-import * as process   from 'process';
+var Node = require('../modules/node.js');
+var path = require('path');
+var process = require('process');
 
 // Expected
 process.chdir(path.join(path.dirname(process.argv[1]), ".."));
 
-var rf = "../data/raw/shuo-wen-jie-zi.txt";
+eval(Node.readf("./site/base/full.js").toString());
+
+var rf = "./data/raw/shuo-wen-jie-zi.txt";
 
 var cs = WikiSource.parse(Node.readf(rf));
 if (cs[1] !== undefined) {
@@ -26,5 +23,5 @@ if (cs[1] !== undefined) {
 }
 
 var s = Markdown.dump(WikiSource.tweakshuowen(cs[0]));
-Node.writef("../data/dict/shuo-wen-jie-zi.md",  s);
-Node.writef("../data/books/shuo-wen-jie-zi.src", s);
+Node.writef("./data/dict/shuo-wen-jie-zi.md",  s);
+Node.writef("./data/books/shuo-wen-jie-zi.src", s);

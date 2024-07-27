@@ -18,9 +18,6 @@ Current goals:
   	which used to be performed by bin/mkabout.js; the code is now
   	"lost"
   	-> Make sure tales (zm-as-a-lib) is working fine with it.
-  	-> Expect some minor issues for bin/*.js scripts, as node.js might
-  	struggle to load a bare JS file (...). There are workarounds thought
-  		https://stackoverflow.com/a/14914442
   - Make a SPA, and remove the book vs. trbook vs. index stuff
   	-> Done on the test website; implement @better-modules, and
   	deploy the new version on the remote. We'll have to write

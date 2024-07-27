@@ -1,8 +1,8 @@
-var fs = require('fs');
+var Node = require('../modules/node.js');
 
-eval(fs.readFileSync("./site/base/full.js").toString());
+eval(Node.readf("./site/base/full.js").toString());
 
-eval(fs.readFileSync("./site/base/full-tests.js").toString());
+eval(Node.readf("./site/base/full-tests.js").toString());
 
 Tests.run([].concat(
 	TestsBookmark.tests,

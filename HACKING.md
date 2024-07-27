@@ -30,7 +30,7 @@ Earlier prototypes had a ``cpp(1)``-based solution (``#include ""``).
 I then switched to ESM modules, but annoyingly, they can't be used
 conveniently from the browser JS console.
 
-The current solution is as follow:
+The current solution is to rely on handrolled ""modules"":
 
   - Have one file per module; put them in either ``lib/`` for
   regular modules or ``tests/`` for tests modules;

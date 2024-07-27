@@ -936,3 +936,9 @@ interface TabItmsStates extends UIBaseState, WithStates, WithToken {
 }
 
 interface HCutState extends TabItmsStates, WithStack, WithTokens {}
+
+// NOTE: Failed to have this one inlined...
+interface SPAPage {
+	mk    : (args0 ?: any) => HTMLElement|Promise<HTMLElement>,
+	title : string
+}

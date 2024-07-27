@@ -5,7 +5,9 @@
  */
 
 var Node = require('../modules/node.js');
+// @ts-ignore
 var path = require('path');
+// @ts-ignore
 var process = require('process');
 
 // Expected

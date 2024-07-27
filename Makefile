@@ -10,6 +10,30 @@ VERSION := $(shell /bin/date '+%s')
 # dev site HTTP port
 port = 8001
 
+LIBFILES = lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js \
+	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/dom.js \
+	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
+	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
+	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \
+	lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js \
+	lib/data/book/wikisource.js lib/data/decomp/chise.js \
+	lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js \
+	lib/data/dict/simpledict.js lib/data/dict/swmarkdown.js lib/data.js \
+	lib/view/about.js lib/spa.js
+
+# Clumsy, but for typechecking, we don't want to have lib/enums.js
+# alongside lib.d.ts, as it'll generate useless conflicts.
+LIBFILESNOENUMS = lib/assert.js lib/attrs.js lib/bookmark.js \
+	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/dom.js \
+	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
+	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
+	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \
+	lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js \
+	lib/data/book/wikisource.js lib/data/decomp/chise.js \
+	lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js \
+	lib/data/dict/simpledict.js lib/data/dict/swmarkdown.js lib/data.js \
+	lib/view/about.js lib/spa.js
+
 # tsc(1) options for JS.
 #
 # 	* --downlevelIteration is for spread operator on string to get
@@ -46,9 +70,9 @@ checkdeps: ./bin/checkdeps.sh
 	@echo All dependencies found
 
 .PHONY: typecheck
-typecheck: lib.d.ts ./bin/mkshuowen.js ./tests/*.js \
-		./tests/*/*/*.js ./lib/*.js ./lib/*/*.js  \
-		./lib/*/*/*.js
+typecheck: lib.d.ts ./bin/mkshuowen.js ./bin/check-data.js \
+		./tests/*.js ./tests/*/*.js ./tests/*/*/*.js \
+		${LIBFILESNOENUMS}
 	@# fd dance and sed(1) to get "clickable" error messages/proper exit status
 	@t=/tmp/zmt.tmp; x=1; tsc ${TSC_CHECK_OPTS} $? 2>&1 > $$t && x=0; sed 's/(/:/;s/,/:/' $$t;  rm $$t; exit $$x
 
@@ -109,7 +133,7 @@ ${ZM_DATA}/LICENSE.md: ./site/base/full.js
 
 ./site/base/full.js: lib/*.js lib/*/*.js lib/*/*/*.js
 	@#cat lib/enums.js $^ > $@
-	@cat lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js lib/classes.js lib/config.js lib/cut.js lib/db.js lib/dom.js lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js lib/data/book/wikisource.js lib/data/decomp/chise.js lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js lib/data/dict/simpledict.js lib/data/dict/swmarkdown.js lib/data.js lib/view/about.js lib/spa.js  > $@
+	@cat ${LIBFILES}  > $@
 
 ./site/base/full-tests.js: tests/*.js tests/*/*.js tests/*/*/*.js
 	@cat $^ > $@

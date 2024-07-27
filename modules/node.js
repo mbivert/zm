@@ -5,7 +5,9 @@
 
 // @ts-ignore
 var Fs    = require('fs')
+// @ts-ignore
 var Child = require('child_process');
+// @ts-ignore
 var Zlib  = require('zlib');
 
 /**

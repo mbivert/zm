@@ -21,7 +21,14 @@ fi
 if [ ! -d "$d" ]; then
 	git clone --depth 1 $repo $d 1>&2
 else
-	(cd $d; git pull) 1>&2
+	(
+		cd $d
+		if ! git pull; then
+			cd /tmp/
+			rm -rf "$d"
+			git clone --depth 1 $repo $d 1>&2
+		fi
+	) 1>&2
 fi
 
 cat $d/IDS-UCS*

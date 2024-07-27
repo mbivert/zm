@@ -1,4 +1,4 @@
-let TestsTests = (function() {
+var TestsTests = (function() {
 
 let tests = [
 	/*

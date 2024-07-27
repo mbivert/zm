@@ -1,4 +1,4 @@
-let TestsUser = (function() {
+var TestsUser = (function() {
 
 let tests = [
 	{

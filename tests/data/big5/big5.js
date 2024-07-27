@@ -1,4 +1,4 @@
-let TestsBig5 = (function() {
+var TestsBig5 = (function() {
 
 /** @type{Array.<Test>} */
 let tests = [

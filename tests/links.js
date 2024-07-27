@@ -1,4 +1,4 @@
-let TestsLinks = (function() {
+var TestsLinks = (function() {
 
 /**
  * Local utf8 to Big5 converter, to avoid relying on Data.

@@ -1,4 +1,4 @@
-let TestsWikiSource = (function() {
+var TestsWikiSource = (function() {
 
 /** @type{Tests} */
 let tests = [

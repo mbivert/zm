@@ -1,4 +1,4 @@
-let TestsCEDict = (function() {
+var TestsCEDict = (function() {
 
 let tests = [
 	/*

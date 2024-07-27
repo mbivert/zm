@@ -1,4 +1,4 @@
-let TestsMove = (function() {
+var TestsMove = (function() {
 
 /** @type{Movable} */
 let m = Move.mk();

@@ -1,4 +1,4 @@
-let TestsCut = (function() {
+var TestsCut = (function() {
 
 /**
  * Create placeholder dict entries to simplified tests

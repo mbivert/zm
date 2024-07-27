@@ -12,7 +12,7 @@ PATH=/bin:/usr/bin:/usr/local/bin:$PATH
 # reformat them.
 awk '/^declare enum/{p=1}p{print}/^}/{p=0}' $1 | \
 	sed '/^declare enum/{
-		s/declare enum/let/
+		s/declare enum/var/
 		s/{$/= {/
 	}
 	/^[ 	]/s/=/:/

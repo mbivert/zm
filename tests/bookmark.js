@@ -1,4 +1,4 @@
-let TestsBookmark = (function() {
+var TestsBookmark = (function() {
 
 /** @type{Array.<Test>} */
 let tests = [

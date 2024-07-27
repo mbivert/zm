@@ -1,4 +1,4 @@
-let TestsWMDecomp = (function() {
+var TestsWMDecomp = (function() {
 /*
  * NOTE: it's likely there's a bit of redundancy here.
  */

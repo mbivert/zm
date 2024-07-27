@@ -3,9 +3,10 @@
  * create a clean markdown file from it. Store the file
  * both in as a dict/ and as a book/.
  */
-import * as WikiSource from "../modules/data/book/wikisource.js";
+
 import * as Node       from "../modules/node.js";
-import * as Markdown   from "../modules/data/book/markdown.js";
+
+eval(Node.readf("./site/base/full.js")+"");
 
 // @ts-ignore
 import * as path      from 'path';

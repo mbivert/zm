@@ -111,6 +111,9 @@ ${ZM_DATA}/LICENSE.md:
 	@#cat lib/enums.js $^ > $@
 	@cat lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js lib/classes.js lib/config.js lib/cut.js lib/db.js lib/dom.js lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js lib/tests.js lib/user.js lib/utils.js lib/view.js lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js lib/data/book/wikisource.js lib/data/decomp/chise.js lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js lib/data/dict/simpledict.js lib/data/dict/swmarkdown.js lib/data.js lib/spa.js > $@
 
+./site/base/full-tests.js: tests/*.js tests/*/*.js tests/*/*/*.js
+	@cat $^ > $@
+
 ./lib/enums.js: ./bin/mkenumsjs.sh ./lib.d.ts
 	@echo Creating $@...
 	@sh ./bin/mkenumsjs.sh ./lib.d.ts > $@
@@ -119,7 +122,7 @@ ${ZM_DATA}/LICENSE.md:
 	@echo Creating $@...
 	@sh ./bin/mkdbjs.sh ./schema.sql > $@
 
-./bin/tests.js: ./bin/mktestsjs.sh ./tests/*.js ./tests/*/*/*.js
+./bin/tests.js: ./bin/mktestsjs.sh ./site/base/full.js ./site/base/full-tests.js
 	@echo Creating $@...
 	@sh ./bin/mktestsjs.sh > $@
 

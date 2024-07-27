@@ -25,24 +25,34 @@ external dependencies to the strict minimum.
 This is one way to counter-balance the great inertia and lack of
 maturity of the frontend ecosystem.
 
-## Modules
-For now, we're using ESM modules syntax over CommonJS. I
-used to have a ``cpp(1)``-based mechanism, which wasn't perfect,
-but the current solutions is annoying (see './TODO.md:/^##.*@better-modules').
+## "Modules"
+Earlier prototypes had a ``cpp(1)``-based solution (``#include ""``).
+I then switched to ESM modules, but annoyingly, they can't be used
+conveniently from the browser JS console.
 
-Always import modules as such
+The current solution is as follow:
 
-```
-	import * as Module    from './modules/module.js'
-	import * as TheModule from './modules/themodule.js'
-	import * as FooModule from './modules/foo/module.js'
-```
+  - Have one file per module; put them in either ``lib/`` for
+  regular modules or ``tests/`` for tests modules;
+  - the module *must* be declared as follow; mind in particular
+  the crucial ``var`` (over ``let``) which allows our modules
+  to be easily "eval-imported" for some local scripts ran via
+  ``node(1)`` (see [``bin/tests.js``][gh-mb-zm-bin-tests.js] as an example)
 
-XXX we're not doing this for ``modules/data/*/*`` atm; see for
-example ``modules/data.js``.
-
-All modules are stored under modules/ as .js files but the
-tests.
+  ```
+  var ModuleName = (function() {
+  ...
+  /* exported stuff */
+  return {
+  };
+  });
+  ```
+  - Tests modules names are systematically prefixed by ``Tests``;
+  - All modules are packed together in a ``full.js`` file; all
+  tests modules are packed in a ``full-tests.js`` file;
+  - There is a little bit of dependency remaining between the
+  modules, so the packing remains a bit special; we could and
+  probably will in the near future get rid of of the dependencies;
 
 ## Tests
 Tests are special modules, stored in tests/. They should
@@ -150,3 +160,4 @@ And e.g. prepared the codebase for upcoming features
   - './TODO.md:/^##.*@backend' : proper user login/logout, database, etc.
 
 [gh-ts-exceptions]: https://github.com/microsoft/TypeScript/issues/13219
+[gh-mb-zm-bin-tests.js]: https://github.com/mbivert/zm/blob/master/bin/tests.js

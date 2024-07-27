@@ -1,4 +1,4 @@
-let TestsChise = (function() {
+var TestsChise = (function() {
 
 let tests = [
 	{

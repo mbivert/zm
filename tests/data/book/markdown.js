@@ -1,4 +1,4 @@
-let TestsMarkdown = (function() {
+var TestsMarkdown = (function() {
 
 let tests = [
 	{

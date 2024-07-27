@@ -2,28 +2,21 @@
 
 set -e
 
-# TODO: there's too much potential naming overlap; module
-# names needs to be complete.
+# NOTE/XXX: we should probably add new test modules manually now,
+# as this is a bit clumsy/fragile.
 
+cat << 'EOF'
+var fs = require('fs');
 
-#for x in `du -a ./tests | awk '/.js$/ { printf("Tests%s%s\n", substr($2, 1, 1), substr($2, 2)) }' | sort`; do
-#	n=`basename $x .js`
-#	echo import '*' as $n from "'../$x'"
-#done
+eval(fs.readFileSync("./site/base/full.js").toString());
 
-#echo import '*' as Tests from "'../modules/tests.js'"
-#echo ''
+eval(fs.readFileSync("./site/base/full-tests.js").toString());
 
-cat ./site/base/full.js ./tests/*.js ./tests/*/*.js ./tests/*/*/*.js
+Tests.run([].concat(
+EOF
 
-echo 'Tests.run([].concat('
-
-#echo "	TestsMove.tests,"
-
-
-# Won't work: (e.g. WikiSource vs. Wikisource
 for x in `du -a ./tests | awk '/.js$/ { print $2 }'| sort`; do
-	n=$(grep '^let Tests.* = (function() {$' $x | awk '{ print $2 }')
+	n=$(grep '^var Tests.* = (function() {$' $x | awk '{ print $2 }')
 	echo "	$n.tests,"
 done
 

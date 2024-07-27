@@ -1,4 +1,4 @@
-let TestsData = (function() {
+var TestsData = (function() {
 
 /**
  * Create placeholder dict entries to simplified tests

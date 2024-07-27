@@ -18,9 +18,12 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"net/http/fcgi"
 	"os"
 	"path/filepath"
 	"strings"
+	"os/signal"
+	"syscall"
 )
 
 type Config struct {
@@ -29,7 +32,6 @@ type Config struct {
 }
 
 var C Config
-var configFn = "config.json"
 
 var indexPageTmpl = template.Must(template.New("").Parse(""+
 `<!DOCTYPE html>
@@ -95,14 +97,19 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 </html>
 `));
 
-var port  string
-var usock string
-var dir   string
+var port     string
+var usock    string
+var dir      string
+var fastcgi  bool
+var configFn string
 
 func init() {
 	flag.StringVar(&port,  "p", ":8001", "TCP address to listen to")
 	flag.StringVar(&dir,   "d", "./site-ready/", "HTTP root location")
 	flag.StringVar(&usock, "u", "", "If set, listen on unix socket over TCP port")
+	flag.BoolVar(&fastcgi, "f", false, "If set, use the UNIX socket and FastCGI")
+	flag.StringVar(&configFn, "c", "config.json", "/path/to/config.json")
+
 	flag.Parse();
 
 	data, err := os.ReadFile(configFn)
@@ -135,17 +142,34 @@ func main() {
 	})
 
 	if usock != "" {
-		// otherwise, net.Listen() fails with a "bind: address already in use"
-		if err := os.RemoveAll(usock); err != nil {
-			log.Fatal(err)
-		}
-
 		l, err := net.Listen("unix", usock)
 		if err != nil {
 			log.Fatal(err)
 		}
-		log.Println("Listening on unix:"+usock)
-		log.Fatal(http.Serve(l, nil))
+
+		// NOTE: the socket needs to be properly closed on exit, for
+		// otherwise, it'll stay bound. In production, it becomes tricky
+		// to simply remove the socket before starting.
+		//
+		// https://stackoverflow.com/a/16702173
+		sigc := make(chan os.Signal, 1)
+		signal.Notify(sigc, os.Interrupt, os.Kill, syscall.SIGTERM)
+		go func(c chan os.Signal) {
+			// Wait for a SIGINT or SIGKILL:
+			sig := <-c
+			log.Printf("Caught signal %s: shutting down.", sig)
+			// Stop listening (and unlink the socket if unix type):
+			l.Close()
+			os.Exit(0)
+		}(sigc)
+
+		log.Printf("Listening on unix:%s (fastcgi: %t)\n", usock, fastcgi);
+
+		if fastcgi {
+			log.Fatal(fcgi.Serve(l, nil))
+		} else {
+			log.Fatal(http.Serve(l, nil))
+		}
 	} else {
 		log.Println("Listening on "+port)
 		log.Fatal(http.ListenAndServe(port, nil))

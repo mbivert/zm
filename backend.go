@@ -185,10 +185,9 @@ func main() {
 		sigc := make(chan os.Signal, 1)
 		signal.Notify(sigc, os.Interrupt, os.Kill, syscall.SIGTERM)
 		go func(c chan os.Signal) {
-			// Wait for a SIGINT or SIGKILL:
+			// Wait for signal/interrupt
 			sig := <-c
 			log.Printf("Caught signal %s: shutting down.", sig)
-			// Stop listening (and unlink the socket if unix type):
 			l.Close()
 			os.Exit(0)
 		}(sigc)

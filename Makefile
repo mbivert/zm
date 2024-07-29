@@ -49,7 +49,7 @@ dev:
 	@echo "Re(starting) local dev server on http://localhost:${port}..."
 	@lsof -i -P -n|awk '/TCP.*'${port}'.*LISTEN/ { print "kill " $$2 }' | sh
 	@#nohup python3 -m http.server ${port} -d ./site-ready/ &
-	@nohup go run server.go &
+	@nohup go run backend.go &
 	@$(eval ROOT := )
 
 .PHONY: help
@@ -92,12 +92,12 @@ tests: typecheck ./bin/tests.js ./lib/enums.js
 # Used for pure js dev sessions.
 .PHONY: quick-site
 quick-site: config site/base/pako.min.js ./lib/enums.js \
-		site/content/about.html site/base/full.js server
+		site/content/about.html site/base/full.js backend
 	@echo "Re(creating) website..."
 	@rm -rf ./site-ready/
 	@mkdir ./site-ready/
 	@cp -rf ./site/base/* ./site-ready/
-	@cp server      ./site-ready/
+	@cp backend  ./site-ready/
 	@cp config.json ./site-ready/
 
 .PHONY: site
@@ -106,7 +106,7 @@ site: typecheck check-data config site/base/pako.min.js  \
 		site/content/about.html site/base/full.js \
 		quick-site
 
-server: server.go
+backend: backend.go
 	@echo Building backend...
 	@go build $^
 

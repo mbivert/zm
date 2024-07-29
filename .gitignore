@@ -5,4 +5,4 @@ site/base/data/decomp/*.gz
 site/base/full.js
 +Buffer
 nohup.out
-server
+backend

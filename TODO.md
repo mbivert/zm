@@ -13,9 +13,6 @@ A small amount of old/unsorted items are located at the end of the file.
 Current goals:
   - Clean the setup scripts (auto-restart, automatic emails,
   regular ping, etc.: we're not serving static pages anymore).
-  Also, rename server.go to zm-backend.go, nohup kinda sucks plus
-  we want a PID file to easily terminate / restart the job, finalize
-  the setup-zm script
   - sitemap.xml, at least for googleability.
   - Working on @backend; in particular, the (external) auth module
   feels good enough, let's try it for real

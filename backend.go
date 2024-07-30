@@ -24,6 +24,8 @@ import (
 	"strings"
 	"os/signal"
 	"syscall"
+	"github.com/mbivert/auth"
+	"github.com/mbivert/auth/db/sqlite"
 )
 
 type Config struct {
@@ -73,6 +75,7 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 						<li><a href="{{ .root }}/books.html">Books</a></li>
 						<li><a href="{{ .root }}/help.html">Help</a></li>
 						<li><a href="{{ .root }}/about.html">About</a></li>
+						<li><a href="{{ .root }}/login.html">Login</a></li>
 					</ul>
 				</div>
 				<div id="important">
@@ -140,6 +143,19 @@ func main() {
 		"root"    : C.Root,
 		"version" : C.Version,
 	})
+
+	fn   := "db.sqlite"
+
+	db, err := sqlite.New(fn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := auth.LoadConf("config.auth.json"); err != nil {
+		log.Fatal(err)
+	}
+
+	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)

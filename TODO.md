@@ -16,6 +16,12 @@ Current goals:
   - sitemap.xml, at least for googleability.
   - Working on @backend; in particular, the (external) auth module
   feels good enough, let's try it for real
+    - verification tests in auth
+    - RPC.call() error display
+    - verification url, submission & auto-login
+    - form & fields management. In particular, we'll soon
+      need to be able to edit zm preferences & account details
+      (email, name, etc.)
 
 Major user features (~expected order):
   - @backend

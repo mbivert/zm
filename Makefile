@@ -15,6 +15,7 @@ LIBFILES = lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js \
 	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
 	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
 	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \
+	lib/view/login.js lib/rpc.js \
 	lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js \
 	lib/data/book/wikisource.js lib/data/decomp/chise.js \
 	lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js \
@@ -28,6 +29,7 @@ LIBFILESNOENUMS = lib/assert.js lib/attrs.js lib/bookmark.js \
 	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
 	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
 	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \
+	lib/view/login.js lib/rpc.js \
 	lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js \
 	lib/data/book/wikisource.js lib/data/decomp/chise.js \
 	lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js \
@@ -88,10 +90,10 @@ tests: typecheck ./bin/tests.js ./lib/enums.js
 	@echo Running tests...
 	@node ./bin/tests.js
 
-# Like site, but without typechecking, site-data/data;
-# Used for pure js dev sessions.
+# Like site, but without site-data/data; typechecking sometimes
+# manually lifted.
 .PHONY: quick-site
-quick-site: config site/base/pako.min.js ./lib/enums.js \
+quick-site: typecheck config site/base/pako.min.js ./lib/enums.js \
 		site/content/about.html site/base/full.js backend
 	@echo "Re(creating) website..."
 	@rm -rf ./site-ready/

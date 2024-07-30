@@ -363,3 +363,19 @@ the main constraint on html/body regarding scrolling.
 	margin-left : 5px;
 	color       : darkslategray;
 }
+
+.zhongmu-login-signin {
+	display               : grid;
+	justify-content       : center;
+	height                : 50%;
+	grid-template-columns : 1fr;
+}
+
+.zhongmu-login-signin > * {
+	justify-self : center;
+}
+
+.zhongmu-two-columns {
+	display : grid;
+	grid-template-columns : 1fr 1fr;
+}

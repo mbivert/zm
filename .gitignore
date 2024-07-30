@@ -6,3 +6,4 @@ site/base/full.js
 +Buffer
 nohup.out
 backend
+db.sqlite

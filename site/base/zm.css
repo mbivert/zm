@@ -364,14 +364,14 @@ the main constraint on html/body regarding scrolling.
 	color       : darkslategray;
 }
 
-.zhongmu-login-signin {
+.zhongmu-account {
 	display               : grid;
 	justify-content       : center;
 	height                : 50%;
 	grid-template-columns : 1fr;
 }
 
-.zhongmu-login-signin > * {
+.zhongmu-account > * {
 	justify-self : center;
 }
 

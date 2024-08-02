@@ -2,7 +2,7 @@
 -- of double-quoted strings (see Data table, "CHECK (Type IN (...")
 --
 -- I've switched to single quotes everywhere, but haven't bothered
--- fixing the possesive s (e.g. Sun Tzu's Art of War)
+-- fixing the possessive s (e.g. Sun Tzu's Art of War)
 --
 -----------------------------------------------------------------------------
 --

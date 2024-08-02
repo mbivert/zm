@@ -25,7 +25,6 @@ import (
 	"os/signal"
 	"syscall"
 	"github.com/mbivert/auth"
-	"github.com/mbivert/auth/db/sqlite"
 )
 
 type Config struct {
@@ -146,7 +145,7 @@ func main() {
 
 	fn   := "db.sqlite"
 
-	db, err := sqlite.New(fn)
+	db, err := auth.NewSQLite(fn)
 	if err != nil {
 		log.Fatal(err)
 	}

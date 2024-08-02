@@ -13,10 +13,18 @@ A small amount of old/unsorted items are located at the end of the file.
 Current goals:
   - Clean the setup scripts (auto-restart, automatic emails,
   regular ping, etc.: we're not serving static pages anymore).
-  - sitemap.xml, at least for googleability.
+  - (automated) sitemap.xml
   - Working on @backend; in particular, the (external) auth module
   feels good enough, let's try it for real
     - verification tests in auth
+    - trim http dep in auth: use json-rpc
+    - captcha setup:
+      - to be done in zm then (no http in auth "anymore")
+      - historical (not solid): https://github.com/dchest/captcha
+      - very young, requires some JS, behavioral: https://github.com/wenlng/go-captcha/
+      - https://github.com/steambap/captcha
+      - https://github.com/mojocn/base64Captcha
+        - https://reintech.io/blog/implementing-captcha-system-in-go
     - RPC.call() error display
     - verification url, submission & auto-login
     - form & fields management. In particular, we'll soon
@@ -380,8 +388,90 @@ A few identified bugs. SQL database scheme prototype.
 	To be correlated with @backend.
 
 ## medium @data-organisation
-	I'm keeping this one open because the DB isn't really a DB just
-	yet.
+	Plan:
+		- Each Data (SQL table) entry has an owner (User SQL table).
+			DataUser "join" table
+
+		- Each Data has some permissions (Perm table)
+			DataPerm "join" table
+
+		- For now, let's keep the permissions simple: private|public;
+		we could add more sophisticated schemes later eventually, but
+		it should be enough for zm.
+
+		- Some keys are currently UNIQUE in Data (e.g. Data.Name); we
+		may want to lift those to allow different users to register
+		the potentially different data under the same name.
+
+		- Currently, each Data is associated to a Resource, but
+		e.g. user input-ed book won't necessarily have one.
+
+		- All Data files are currently available as via a static
+		path (HTTP); no permission guards.
+
+	Operations:
+		- AddData()
+			- AddBook()
+				- When adding the book, add a corresponding
+				"dumb" Resource entry.
+
+				- Form fields:
+					Name
+					Type='book'
+					Descr
+					Resource.UrlFetch // perhaps replace with a descr;
+					                  // and have all such details directly
+					                  // in the fetcher's code/config.
+					Fmt='markdown'    // ~always?
+					(Data.File)       // automatically generated
+					(Resource.File)   // automatically generated
+					Formatter=cat     // automatically set
+					perm=Public/Private
+					License
+					Content / file upload
+
+			- AddLicense()
+				- Use a component to wrap creation of a new license
+				around selecting a potentially existing one
+				- Fields:
+					Name
+					Descr
+					URL
+
+			- AddDict()
+				- Really, that's pretty much the same thing as
+				for AddBook, but with different Type/Fmt. So we
+				may finally want to have a AddData() and call that
+
+			// Those two are for later, but keep them in mind
+			/ AddTranslation()
+				- Translation are currently very fragile. We'd
+				want to be more flexible (e.g. cut/join chunks
+				from the UI), so let's do that later
+			/ AddDecomp()
+		- GetData()
+			- GetBook()
+		- EditData()
+			- EditBook()
+				- We could have a global page to edit books, but perhaps
+				we'd want to also be able to edit them locally (e.g.
+				edit a chunk: as a first impl. we could merely send the
+				whole book with the edited chunk).
+
+				- If the book is public, we'll want to have a way to
+				automatically copy the book to a personnal copy. Books
+				should be stable enough for us not to bother with a
+				patching mechanism.
+
+			- EditDict()
+				- Small dicts would be okay to edit globally, but we'll
+				mostly want to be able to perform small, on-the-fly edits.
+				- The dict edition is a bit trickier, because we want
+				to handle both genuine edition and patches edition.
+			- For both books & dicts, we'll want to have a mechanism to
+			automatically create a personal copy
+		- AddResource()
+		- AddTranslation()
 
 	See @books-metadata, @database, @backend, @ressources-fetch.
 	@dict-sources, @dict-parsing-error, @data-subdivision
@@ -769,6 +859,36 @@ A few identified bugs. SQL database scheme prototype.
 	Can we have a pict.csv for ancient forms?
 
 ## medium/long @backend @database
+	Update: for authentication / user management, we rely on
+		https://github.com/mbivert/auth
+
+	Two independent modules, orthogonals with auth, are planned:
+		- fs;
+		- perms;
+
+	Other backend features to consider:
+		- user preferences; 
+		- schema.sql integration, ie.
+			- get rid of bin/mkdbjs.sh
+			- rework lib/db.js to actually perform RPCs
+				- we'll want to be able to perform public RPCs (to
+				keep the website working by default)
+				- and private ones
+		- schema2.sql review
+		- currently, books aren't managed in data.js; we'll want
+		to see if there are any good reasons
+
+	Other data we'll want to store in database:
+		- 'lib/links.js:/^var links/' (there are a few bits for
+		that in schema2.sql already)
+		- Also 'lib/links.js:/^var imgs/' and 'lib/links.js:/^var audios/'
+		- We want to be careful
+			- There's too much to implement at once;
+			- But we have an idea of what we'll probably implement, so
+			we have to prepare for flexibility.
+
+	(end update)
+
 	The backend originally (in previous prototype that is)
 	was a dumb go server handling a few requests, mainly to
 	update pieces in a translated book.

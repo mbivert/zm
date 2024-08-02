@@ -156,6 +156,27 @@ func main() {
 
 	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
+/*
+	// Add books, dictionaries
+	// Those must work as the auth route: we also need a wrap[In,Out]()
+	http.Handle("/data/add", func(w, r) {
+		// Must be authenticated, so a valid chainable token must be
+		// provided: we must be able to call auth.Chain()
+		var chainOut
+
+		// This is a bit clumsy: if our ChainIn() was an interface,
+		// we could forward DataAddIn directly.
+		err := auth.Chain(&auth.ChainIn{Token:DataAddIn.Token}, &chainOut)
+		if err != nil {
+			return fmt.Errorf("Invalid token / not authenticated")
+		}
+
+		Data.Add(...)
+	})
+
+	http.Handle("/data/get", func(w, r) {
+	})
+*/
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)
 		log.Println("Request to "+path)

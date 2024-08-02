@@ -416,6 +416,12 @@ A few identified bugs. SQL database scheme prototype.
 				"dumb" Resource entry.
 
 				- Form fields:
+					Token:
+						we must be authenticated to add new Data.
+						This will be chained on the server side,
+						so we also need to remember to update our
+						locate document.cookie accordingly when
+						receiving an answer.
 					Name
 					Type='book'
 					Descr
@@ -451,7 +457,49 @@ A few identified bugs. SQL database scheme prototype.
 			/ AddDecomp()
 		- GetData()
 			- GetBook()
-		- EditData()
+				- Because data access now becomes a bit more complicated:
+				we can't just have bare static files, because we might
+				need authentication.
+
+				- So, either we give up on RPC and rely on a cookie and
+				make those requests somewhat special: we could still
+				chain the token, and the rest of the backend code shouldn't
+				change much.
+
+				- Or, we keep going with RPC, and we need to add some
+				extra request.
+
+				- A peculiar difficulty would be to properly think about
+				data caching. Currently there's a broken attempt to cache
+				things via relayd. But if we go with full RPC, we probably
+				won't be able to cache things this way -- assuming we spend
+				the time to fix it.
+
+				This mean that we'll have to handle the cache by hand. This
+				perhaps makes things a touch slower (one potentially useless
+				request). The process would be to store files in the browser,
+				keep track of a hash. Then send via the route the current
+				hash: if there's a match with what's pre-computed on the back,
+				we're told we can use what we already have.
+
+				- We may even allow an offline mode here: if there's no
+				network, use local stuff.
+
+				- Now, another issue would be: what should we return?
+				We'll chain the token, so we'll need a {Token:...} at least,
+				unless we break the rule and use a HTTP header. Assume we
+				don't. Two main choices:
+
+					1. Return the file content in a JSON string, next
+					to our Token. (simple)
+
+					2. Return an access token to a store: the store eats
+					a special token and return a file. (special requests).
+
+				- We probably can go with 1. at least for now.
+
+		// Edition will be for later as well.
+		/ EditData()
 			- EditBook()
 				- We could have a global page to edit books, but perhaps
 				we'd want to also be able to edit them locally (e.g.
@@ -470,8 +518,6 @@ A few identified bugs. SQL database scheme prototype.
 				to handle both genuine edition and patches edition.
 			- For both books & dicts, we'll want to have a mechanism to
 			automatically create a personal copy
-		- AddResource()
-		- AddTranslation()
 
 	See @books-metadata, @database, @backend, @ressources-fetch.
 	@dict-sources, @dict-parsing-error, @data-subdivision

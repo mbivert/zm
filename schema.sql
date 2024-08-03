@@ -41,6 +41,16 @@
 --	  PostgreSQL settings for now.
 -----------------------------------------------------------------------------
 
+-- NOTE: this is exactly auth's User table, and we'll depend on this for now.
+CREATE TABLE User (
+	Id                      INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+	Name        TEXT        UNIQUE,
+	Email       TEXT        UNIQUE,
+	Passwd      TEXT,
+	Verified    INTEGER,
+	CDate       INTEGER
+);
+
 -- External ressources for which we keep a local copy of the raw,
 -- unformatted data.
 --
@@ -68,7 +78,10 @@ CREATE TABLE Resource (
 CREATE TABLE Data (
 	Id        BIGSERIAL PRIMARY KEY,
 
+	UserId    BIGSERIAL,
+
 	-- Acts as a textual ID in JavaScript code, for clarity to users.
+	-- The Name is unique for each UserId (constrained later)
 	Name      TEXT      UNIQUE NOT NULL,
 
 	Type      TEXT CHECK(Type IN (
@@ -95,7 +108,7 @@ CREATE TABLE Data (
 
 	-- .File's format, that is, what .Formatter is supposed
 	-- to have created.
-	Fmt       TEXT CHECK(fmt IN (
+	Fmt       TEXT CHECK(Fmt IN (
 		-- CC-CEDICT "extended" (+basic patching abilities)
 		'cc-cedict',
 
@@ -126,7 +139,11 @@ CREATE TABLE Data (
 	FmtParams TEXT,
 
 	-- URL of the project if any
-	UrlInfo  TEXT
+	UrlInfo  TEXT,
+
+	-- Name is unique for each user (UI will be clearer)
+	-- NOTE: perhaps we'd want (UserId, Name) to be our PRIMARY key then.
+	CONSTRAINT uniq UNIQUE (UserId, Name)
 );
 
 -- For clarity's sake, we want to display licenses of the
@@ -136,6 +153,16 @@ CREATE TABLE License (
 	Name  TEXT      UNIQUE NOT NULL,
 	Descr TEXT,
 	URL   TEXT
+);
+
+-- Let's keep it simple for now
+CREATE TABLE Permission (
+	DataId          BIGSERIAL,
+
+	Public INTEGER, -- 0 : private; 1 : public
+
+	CONSTRAINT fk_data    FOREIGN KEY (DataId)
+		REFERENCES Data(Id)    ON DELETE CASCADE
 );
 
 -- Join table between Data & License
@@ -170,6 +197,14 @@ CREATE TABLE DataResource (
 -- Numerical IDs below are dumb. Not sure there's a generic
 -- SQL auto-increment feature; we'll add those via proper
 -- SQL requests yet to be written anyway.
+
+-- Default users; we'll have something better for production.
+INSERT INTO User
+	(Id, Name, Email, Passwd, Verified, CDate)
+VALUES
+	(1, 'zm', 'foo@bar.com', 'redacted', 1, 1722726391),
+	(2, 'mb', 'bar@bar.com', 'redacted', 2, 1722726391)
+	;
 
 -- Known licenses
 INSERT INTO License
@@ -233,120 +268,120 @@ VALUES
 	;
 
 INSERT INTO Data
-	(Id, Name, Type, Descr, Fmt, FmtParams, File, Formatter, UrlInfo)
+	(Id, UserId, Name, Type, Descr, Fmt, FmtParams, File, Formatter, UrlInfo)
 VALUES
 	(
-		1, 'CC-CEDICT', 'dict', 'Chinese/English dictionary',
+		1, 1, 'CC-CEDICT', 'dict', 'Chinese/English dictionary',
 		'cc-cedict', '{eol:"\r\n",cols:[0]}',
 		'data/dict/cc-cedict.csv.gz', 'cat',
 		'https://cc-cedict.org/wiki/'
 	),
 	(
-		2, 'ZM-add', 'dict', 'Additional CC-CEDICT, mainly "archaic" entries',
+		2, 1, 'ZM-add', 'dict', 'Additional CC-CEDICT, mainly "archaic" entries',
 		'cc-cedict', '{eol:"\n",cols:[0]}',
 		'data/dict/zm-add.csv.gz', 'cat',
 		'https://zhongmu.eu/'
 	),
 	(
-		3, 'CC-CEDICT-singles', 'dict', 'Single-character CC-CEDICT entries only registered as simplified',
+		3, 1, 'CC-CEDICT-singles', 'dict', 'Single-character CC-CEDICT entries only registered as simplified',
 		'cc-cedict', '{eol:"\n",cols:[0]}',
 		'data/dict/cc-cedict-singles.csv.gz', 'cat',
 		'https://zhongmu.eu/'
 	),
 	(
-		4, 'CHISE-ids', 'decomp', 'CHISE UCS IDs',
+		4, 1, 'CHISE-ids', 'decomp', 'CHISE UCS IDs',
 		'chise', '',
 		'data/decomp/chise.csv.gz', 'cat',
 		'http://chise.org'
 	),
 	(
-		5, 'ZM-pict', 'dict', 'Pictographic descriptions',
+		5, 1, 'ZM-pict', 'dict', 'Pictographic descriptions',
 		'cc-cedict', '{eol:"\n",cols:[0]}',
 		'data/dict/zm-pict.csv.gz', 'cat',
 		'https://zhongmu.eu/'
 	),
 	(
-		6, 'WM-decomp', 'decomp', 'WikiMedia graphical decomposition table',
+		6, 1, 'WM-decomp', 'decomp', 'WikiMedia graphical decomposition table',
 		'wm-decomp', '',
 		'data/decomp/wm-decomp.csv.gz', 'mk-wm-decomp.sh',
 		'https://commons.wikimedia.org/wiki/Commons:Chinese_characters_decomposition'
 	),
 	(
-		7, 'Unicode-BIG5', 'big5', 'unicode.org s utf8/big5 correspondance table',
+		7, 1, 'Unicode-BIG5', 'big5', 'unicode.org s utf8/big5 correspondance table',
 		'unicode-big5', '',
 		'data/big5/big5.csv.gz', 'cat',
 		'https://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/BIG5.TXT'
 	),
 	(
-		8, 'Shuowen Jiezi, book (Wikisource)', 'book', 'WikiSource version of the ShuoWen JieZi',
+		8, 1, 'Shuowen Jiezi, book (Wikisource)', 'book', 'WikiSource version of the ShuoWen JieZi',
 		'markdown', '',
 		'data/books/shuowen', 'mkshuowen-ws-book.js',
 		'https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97'
 	),
 	(
-		9, 'WS-shuowen', 'dict', 'WikiSource version of the ShuoWen JieZi',
+		9, 1, 'WS-shuowen', 'dict', 'WikiSource version of the ShuoWen JieZi',
 		'sw-markdown', '',
 		'data/dict/ws-shuowen.csv.gz', 'mkshuowen-ws-dict.js',
 		'https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97'
 	),
 	(
-		10, 'CFDICT', 'dict', 'Chinese/French dictionary',
+		10, 1, 'CFDICT', 'dict', 'Chinese/French dictionary',
 		'cc-cedict', '{eol:"\r\n",cols:[0]}',
 		'data/dict/cfdict.csv.gz', 'cat',
 		'https://chine.in/mandarin/dictionnaire/CFDICT/'
 	),
 	(
-		11, 'HanDeDict', 'dict', 'Chinese/German dictionary',
+		11, 1, 'HanDeDict', 'dict', 'Chinese/German dictionary',
 		'cc-cedict', '{eol:"\r\n",cols:[0]}',
 		'data/dict/handedict.csv.gz', 'cat',
 		'https://handedict.zydeo.net/'
 	),
 	(
-		12, 'Bai Jia Xing', 'book', 'Bai Xia Jing',
+		12, 1, 'Bai Jia Xing', 'book', 'Bai Xia Jing',
 		'markdown', '',
 		'data/books/bai-jia-xing', 'cat',
 		-- https://en.wikipedia.org/wiki/Hundred_Family_Surnames
 		'https://www.gutenberg.org/files/25196/25196-0.txt'
 	),
 	(
-		13, 'Qian Zi Wen', 'book', 'Qian Zi Wen',
+		13, 1, 'Qian Zi Wen', 'book', 'Qian Zi Wen',
 		'markdown', '',
 		'data/books/qian-zi-wen', 'cat',
 		-- https://en.wikipedia.org/wiki/Thousand_Character_Classic
 		'https://zh.wikisource.org/wiki/%E5%8D%83%E5%AD%97%E6%96%87'
 	),
 	(
-		14, 'San Zi Jing', 'book', 'San Zi Jing (Herbert Giles, ctext.org)',
+		14, 1, 'San Zi Jing', 'book', 'San Zi Jing (Herbert Giles, ctext.org)',
 		'markdown', '',
 		'data/books/qian-zi-wen', 'cat',
 		'https://ctext.org/three-character-classic'
 	),
 	(
-		15, 'OpenRussian', 'dict', 'Russian to English (and Deustch) dictionary',
+		15, 1, 'OpenRussian', 'dict', 'Russian to English (and Deustch) dictionary',
 		'simple-dict', '',
 		'data/dict/openrussian.csv.gz', 'cat',
 		'https://en.openrussian.org/'
 	),
 	(
-		16, 'ZM-decomp', 'decomp', 'Additional decompositions to wikimedia data',
+		16, 1, 'ZM-decomp', 'decomp', 'Additional decompositions to wikimedia data',
 		'wm-decomp', '',
 		'data/decomp/zm-decomp.csv.gz', 'cat',
 		'https://zhongmu.eu/'
 	),
 	(
-		17, 'CFDICT-singles', 'dict', 'Single-character CFDICT entries only registered as simplified',
+		17, 1, 'CFDICT-singles', 'dict', 'Single-character CFDICT entries only registered as simplified',
 		'cc-cedict', '{eol:"\n",cols:[0]}',
 		'data/dict/cfdict-singles.csv.gz', 'cat',
 		'https://zhongmu.eu/'
 	),
 	(
-		18, 'HanDeDict-singles', 'dict', 'Single-character HanDeDict entries only registered as simplified',
+		18, 1, 'HanDeDict-singles', 'dict', 'Single-character HanDeDict entries only registered as simplified',
 		'cc-cedict', '{eol:"\n",cols:[0]}',
 		'data/dict/cc-cedict-singles.csv.gz', 'cat',
 		'https://zhongmu.eu/'
 	),
 	(
-		19, 'Art of war (partial)', 'book', 'Sun-Tzu s Art of war',
+		19, 1, 'Art of war (partial)', 'book', 'Sun-Tzu s Art of war',
 		'markdown', '',
 		'data/books/art-of-war', 'cat',
 		'https://ctext.org/art-of-war/'
@@ -389,6 +424,30 @@ VALUES
 	(9, 4),
 	(10, 6),
 	(11, 7)
+	;
+
+INSERT INTO Permission
+	(DataId, Public)
+VALUES
+	(1, 1),
+	(2, 1),
+	(3, 1),
+	(4, 1),
+	(5, 1),
+	(6, 1),
+	(7, 1),
+	(8, 1),
+	(9, 1),
+	(10, 1),
+	(11, 1),
+	(12, 1),
+	(13, 1),
+	(14, 1),
+	(15, 1),
+	(16, 1),
+	(17, 1),
+	(18, 1),
+	(19, 1)
 	;
 
 -- SQLite JSON export:

@@ -1,45 +1,45 @@
-CREATE TABLE Users (
+CREATE TABLE User (
 	...
 )
 
-CREATE TABLE Groups (
+CREATE TABLE Group (
 	...
 )
 
-CREATE TABLE Authors (
+CREATE TABLE Author (
 )
 
-CREATE TABLE Translators (
+CREATE TABLE Translator (
 )
 
-CREATE TABLE Books (
+CREATE TABLE Book (
 	id
 	name
 )
 
-CREATE TABLE Translations (
+CREATE TABLE Translation (
 	id
 	name
 )
 
-CREATE TABLE Comments (
+CREATE TABLE Comment (
 	id
 	name
 //	author
 	file // path to local comment file
 )
 
-CREATE TABLE BooksTranslations (
+CREATE TABLE BooksTranslation (
 	idb
 	idt
 )
 
-CREATE TABLE BooksComments (
+CREATE TABLE BooksComment (
 	idb
 	idc
 )
 
-CREATE TABLE Datas (
+CREATE TABLE Data (
 	id
 	type (dict, decomp, big5)
 	name string
@@ -51,14 +51,14 @@ CREATE TABLE Datas (
 	url_fetch
 )
 
-CREATE TABLE URLs (
+CREATE TABLE URL (
 	id
 	value
 	type (info, fetch)
 
 )
 
-CREATE TABLE Licenses (
+CREATE TABLE License (
 	id
 	name
 	comment

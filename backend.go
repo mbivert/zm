@@ -25,6 +25,9 @@ import (
 	"os/signal"
 	"syscall"
 	"github.com/mbivert/auth"
+//	"compress/gzip"
+	"fmt"
+//	"io/fs"
 )
 
 type Config struct {
@@ -135,6 +138,24 @@ func isDir(path string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
+type OurFSContext struct{}
+
+func (*OurFSContext) Root() string {
+	return dir
+}
+
+func (*OurFSContext) IsValidToken(tok string) (bool, string, error) {
+	return auth.IsValidToken(tok)
+}
+
+func (*OurFSContext) CanGet(username, path string) (bool, error) {
+	return true, nil
+}
+
+func (*OurFSContext) CanSet(username, path, data string) (bool, error) {
+	return false, nil
+}
+
 func main() {
 	// Won't change
 	var s strings.Builder
@@ -156,27 +177,9 @@ func main() {
 
 	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
-/*
-	// Add books, dictionaries
-	// Those must work as the auth route: we also need a wrap[In,Out]()
-	http.Handle("/data/add", func(w, r) {
-		// Must be authenticated, so a valid chainable token must be
-		// provided: we must be able to call auth.Chain()
-		var chainOut
+	// Keep the prefix: the files are still located in a data/ directory
+	http.Handle("/data/", NewFS(&OurFSContext{}))
 
-		// This is a bit clumsy: if our ChainIn() was an interface,
-		// we could forward DataAddIn directly.
-		err := auth.Chain(&auth.ChainIn{Token:DataAddIn.Token}, &chainOut)
-		if err != nil {
-			return fmt.Errorf("Invalid token / not authenticated")
-		}
-
-		Data.Add(...)
-	})
-
-	http.Handle("/data/get", func(w, r) {
-	})
-*/
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)
 		log.Println("Request to "+path)
@@ -189,12 +192,18 @@ func main() {
 			path = "index.html"
 		}
 
+		// rough guard: this shouldn't happen anymore
+		if strings.HasPrefix(path, "/data/") {
+			w.WriteHeader(http.StatusBadRequest)
+		}
+
 		if strings.HasSuffix(path, ".html") {
 			// Should barely ever happen
 			if _, err := io.WriteString(w, s.String()); err != nil {
 				log.Println(err)
 			}
 		} else {
+			fmt.Println("HandleFunc /: "+fpath)
 			http.ServeFile(w, r, fpath)
 		}
 	})

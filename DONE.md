@@ -7,6 +7,51 @@ First paragraph of each closed entry contains a closing statement.
 
 # Entries
 
+## medium @data-organisation
+	2024-08-03: this is still a WIP, but to declutter TODO.md
+	Regarding file access, we want them to be cached by the browser
+	(loading them is already time consuming, we'd like to avoid having
+	to download them as well).
+	.
+	A "regular" RPC request will imply a POST, which will kill the
+	cache (required by the spec). We could probably cache by hand
+	anyway via a IndexedDB, but for now, we'll accept the special
+	case.
+	.
+	Note also that for a "regular" RPC request, we'd need to discuss
+	how to handle the return value: if this is JSON, then the file
+	would need to be unziped, and the request compressed on the
+	fly (slightly inefficient, but OTOH, if the request is properly
+	cached, who cares).
+	.
+	Note also that for now, we keep pako, but we should be able
+	to leverage the browser's ability to automatically gunzip
+	content by setting the proper header; see @remove-pako.
+	.
+	See also @cache-loaded-dicts: I thought caching (file downloading)
+	was an issue, but data file loading is also problematic.
+
+	FTR:
+		http.HandleFunc("/data/get", func(w http.ResponseWriter, r *http.Request) {
+			// Perhaps we should at least make sure that the browser
+			// supports it?
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Content-Encoding", "gzip")
+
+			gw := gzip.NewWriter(w)
+			defer gw.Close()
+
+			xs := &DataGetOut{
+				"whatever",
+				"something",
+			}
+
+			if err := json.NewEncoder(gw).Encode(xs); err != nil {
+				log.Println(err)
+			}
+		})
+
+
 ## small @spa-broken-firefox
 	2024-08-03: This and a som Dom.alisten()-based features were
 	broken because of TypeScript boilerplate, and the fact that

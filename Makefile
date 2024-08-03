@@ -51,7 +51,7 @@ dev:
 	@echo "Re(starting) local dev server on http://localhost:${port}..."
 	@lsof -i -P -n|awk '/TCP.*'${port}'.*LISTEN/ { print "kill " $$2 }' | sh
 	@#nohup python3 -m http.server ${port} -d ./site-ready/ &
-	@nohup go run backend.go &
+	@nohup go run backend.go fs.go &
 	@$(eval ROOT := )
 
 .PHONY: help
@@ -108,7 +108,7 @@ site: typecheck check-data config site/base/pako.min.js  \
 		site/content/about.html site/base/full.js \
 		quick-site
 
-backend: backend.go
+backend: backend.go fs.go
 	@echo Building backend...
 	@go build $^
 

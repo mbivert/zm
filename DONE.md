@@ -7,6 +7,15 @@ First paragraph of each closed entry contains a closing statement.
 
 # Entries
 
+## small @spa-broken-firefox
+	2024-08-03: This and a som Dom.alisten()-based features were
+	broken because of TypeScript boilerplate, and the fact that
+	Firefox generates MouseEvent instead of PointerEvent on clicks:
+	https://stackoverflow.com/a/76900433
+
+	SPA navigation is broken on firefox (Linux) for <a>;
+	history navigation works.
+
 ## medium @better-modules
 	2024-07-27: This has been implemented with relative success. There
 	are a few clumsy bits, but we can now access the modules from the

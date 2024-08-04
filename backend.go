@@ -28,7 +28,26 @@ import (
 //	"compress/gzip"
 	"fmt"
 //	"io/fs"
+	"math/rand"
+	"errors"
 )
+
+
+// Copied from ../auth/utils.go; export feels off
+const (
+	alnum = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789"
+)
+
+// Generate a random string of n bytes
+func randString(n int) string {
+	buf := make([]byte, n)
+
+	for i := 0; i < n; i++ {
+		buf[i] = alnum[rand.Intn(len(alnum))]
+	}
+
+	return string(buf)
+}
 
 type Config struct {
 	Version string `json:"version"`
@@ -249,6 +268,32 @@ type DataSetIn struct {
 type DataSetOut struct {
 }
 
+// NOTE: theoretically, we'd need a lock; practically, much less so...
+func mkRandPath(uid auth.UserId) string {
+	path := ""
+	for {
+		path = fmt.Sprintf("data/%d/%s", uid, randString(15))
+		fpath := filepath.Join(dir, path)
+		_, err := os.Stat(fpath);
+		if errors.Is(err, os.ErrNotExist) {
+			break
+		}
+		// TODO: cleaner
+		if err != nil {
+			panic(err)
+		}
+
+	}
+	return path
+}
+
+func WriteFile(path string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(path, content, 0644)
+}
+
 func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 	fmt.Println(in)
 	ok, uid, err := auth.IsValidToken(in.Token)
@@ -259,14 +304,23 @@ func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 		return fmt.Errorf("Not connected!")
 	}
 
-	in.File = fmt.Sprintf("data/%d/%s", uid, "mayberandombits")
+	in.File = mkRandPath(uid)
 	in.UserId = uid
 
-	if err := db.AddData(in); err != nil {
+	// NOTE: we (try to) write the file before adding to the
+	// DB because it's easier to revert in case of issue
+	fpath := filepath.Join(dir, in.File)
+	if err := WriteFile(fpath, []byte(in.Content)); err != nil {
 		return err
 	}
 
-	// TODO: write in.Content to in.File
+	if err := db.AddData(in); err != nil {
+		// Remove the file we've just added
+		if err2 := os.RemoveAll(fpath); err2 != nil {
+			err = fmt.Errorf("%s; in addition: %s", err, err2)
+		}
+		return err
+	}
 	return nil
 }
 

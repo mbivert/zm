@@ -65,6 +65,25 @@ func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 	return public >= 1 || owner == uid, nil
 }
 
+func (db *DB) AddData(d *DataSetIn) error {
+	db.Lock()
+	defer db.Unlock()
+
+	err := db.QueryRow(`
+		INSERT INTO
+			Data (
+				Name, UserId, Type, Descr, File, Formatter,
+				Fmt, FmtParams, UrlInfo
+			)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING Id`,
+			d.Name, d.UserId, d.Type,
+			d.Descr, d.File, "cat",
+			d.Fmt, "", d.UrlInfo).Scan(&d.UserId)
+
+	return err
+}
+
 // Below is essentially copy-pasted from ../auth/db-sqlite.go,
 // so that we implements auth.DB.
 //

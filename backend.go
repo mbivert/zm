@@ -160,6 +160,116 @@ func (*OurFSContext) CanSet(uid auth.UserId, path, data string) (bool, error) {
 	return false, nil
 }
 
+// fancy
+func wrap[Tin, Tout any](
+	db *DB, f func(db *DB, in *Tin, out *Tout) error,
+) func(w http.ResponseWriter, r *http.Request) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var in Tin
+		var out Tout
+
+		r.Body = http.MaxBytesReader(w, r.Body, 1048576)
+		err := json.NewDecoder(r.Body).Decode(&in)
+		if err != nil {
+			log.Println(err)
+			err = fmt.Errorf("JSON decoding failure")
+			goto err
+		}
+
+		err = f(db, &in, &out)
+		if err != nil {
+			goto err
+		}
+
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		err = json.NewEncoder(w).Encode(out)
+
+		if err != nil {
+			log.Println(err)
+			err = fmt.Errorf("JSON encoding failure")
+			goto err
+		}
+
+		return
+
+	err:
+		fails(w, err)
+		return
+	}
+}
+
+type DataType string
+
+// XXX we have it 3 times now: JS, Go, SQL
+const (
+	dataTDict DataType = "dict"
+	dataTDecomp        = "decomp"
+	dataTBig5          = "big5"
+	dataTBook          = "book"
+	dataTPieces        = "pieces"
+)
+
+type DataFmt string
+
+const (
+	dataFCCCEdict DataFmt = "cc-cedict"
+	dataFWMDecomp         = "wm-decomp"
+	dataFChise            = "chise"
+	dataFUnicodeBig5      = "unicode-big5"
+	dataFMarkdown         = "markdown"
+	dataFSWMarkdown       = "sw-markdown"
+	dataFSimpleDict       = "simple-dict"
+	dataFPieces           = "pieces"
+)
+
+type DataSetIn struct {
+	Token     string   // `json:"token"`
+	Name      string   // `json:"name"`
+	Type      DataType // `json:"type"`
+	Descr     string   // `json:"descr"`
+	Fmt       DataFmt  // `json:"fmt"`
+
+	Public    bool     // `json:"public"`
+	LicenseId int64    // `json:"licenseid"`
+
+	// XXX We at least would want to check that
+	// this looks like a URL
+	// rename to url?
+	UrlInfo   string   // `json:"urlinfo"`
+
+	// Okay, we'll do that for now, this should be
+	// good enough for a first draft, and small documents.
+	Content   string   // `json:"content"`
+
+	// This two are automatically computed
+	File      string
+	UserId    auth.UserId
+}
+
+type DataSetOut struct {
+}
+
+func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
+	fmt.Println(in)
+	ok, uid, err := auth.IsValidToken(in.Token)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("Not connected!")
+	}
+
+	in.File = fmt.Sprintf("data/%d/%s", uid, "mayberandombits")
+	in.UserId = uid
+
+	if err := db.AddData(in); err != nil {
+		return err
+	}
+
+	// TODO: write in.Content to in.File
+	return nil
+}
+
 func main() {
 	// Won't change
 	var s strings.Builder
@@ -181,6 +291,8 @@ func main() {
 	}
 
 	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
+
+	http.HandleFunc("/data/set", wrap[DataSetIn, DataSetOut](db, DataSet))
 
 	// Keep the prefix: the files are still located in a data/ directory
 	http.Handle("/data/", NewFS(&OurFSContext{db}))

@@ -115,12 +115,14 @@ func FsGet(
 	return nil
 }
 
-// have one directory per used under data/ : data/<userId>/ would be the
-// most resilient to e.g. username changes. But currently, we don't have
-// the id!
+// have one directory per used under data/ : data/<userId>/
 //
 // We can easily compute how much data each user eats, and easily restrict
 // them accordingly.
+//
+// But this FsSet is perhaps a bit weird as an interface, unless
+// we're just editing a data file: if we're adding a new one, we'll
+// need to push bits in the SQL too.
 //
 // User preferences could eventually be stored there too.
 //

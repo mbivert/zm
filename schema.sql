@@ -57,8 +57,18 @@ CREATE TABLE User (
 -- The same unformatted data can be formatted in multiple ways,
 -- e.g. wikisource's 說文解字 gets transformed in a cc-cedict formatted
 -- dictionary and as a markdown book.
+--
+-- NOTE: it seems that Resource will only be used for "internal"
+-- data, managed by us, with automatic updates & cie. This will
+-- likely need to be systematically managed and supervised, so
+-- if users need it, they'll ask to have for it to be managed.
+--
+-- Otherwise, they'll "only" be able to add regular Data.
+--
+-- (we already have some Data without a Resource: hand-fetched,
+-- essentially immutable stuff, see DataResource)
 CREATE TABLE Resource (
-	Id        BIGSERIAL PRIMARY KEY,
+	Id        INTEGER   PRIMARY KEY AUTOINCREMENT NOT NULL,
 
 	Name      TEXT      UNIQUE NOT NULL,
 
@@ -76,14 +86,14 @@ CREATE TABLE Resource (
 
 -- Available data files.
 CREATE TABLE Data (
-	Id        BIGSERIAL PRIMARY KEY,
-
-	-- Owner
-	UserId    BIGSERIAL,
+	Id        INTEGER   PRIMARY KEY AUTOINCREMENT NOT NULL,
 
 	-- Acts as a textual ID in JavaScript code, for clarity to users.
 	-- The Name is unique for each UserId (constrained later)
 	Name      TEXT      UNIQUE NOT NULL,
+
+	-- Owner
+	UserId    BIGSERIAL,
 
 	Type      TEXT CHECK(Type IN (
 		-- Dictionaries
@@ -144,6 +154,8 @@ CREATE TABLE Data (
 	--
 	-- Note that we could have used .Formatter to avoid such peculiarities
 	-- and normalize the formats. We may do so in the future.
+	--
+	-- XXX Should be called FormatterFmt to avoid confusion?
 	FmtParams TEXT,
 
 	-- URL of the project if any
@@ -157,7 +169,7 @@ CREATE TABLE Data (
 -- For clarity's sake, we want to display licenses of the
 -- various external ressources we're using.
 CREATE TABLE License (
-	Id    BIGSERIAL PRIMARY KEY,
+	Id    INTEGER   PRIMARY KEY AUTOINCREMENT NOT NULL,
 	Name  TEXT      UNIQUE NOT NULL,
 	Descr TEXT,
 	URL   TEXT

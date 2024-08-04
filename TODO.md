@@ -435,10 +435,10 @@ A few identified bugs. SQL database scheme prototype.
 
 	Operations:
 		- AddData()
+			- Use a single form for both AddBook() and AddDict();
+			we might even want to use a single form for *all* data
+			types. This can be added on the account page (future login.html)
 			- AddBook()
-				- When adding the book, add a corresponding
-				"dumb" Resource entry.
-
 				- Form fields:
 					Token:
 						we must be authenticated to add new Data.
@@ -449,13 +449,9 @@ A few identified bugs. SQL database scheme prototype.
 					Name
 					Type='book'
 					Descr
-					Resource.UrlFetch // perhaps replace with a descr;
-					                  // and have all such details directly
-					                  // in the fetcher's code/config.
 					Fmt='markdown'    // ~always?
 					(Data.File)       // automatically generated
-					(Resource.File)   // automatically generated
-					Formatter=cat     // automatically set
+					(Formatter=cat)     // automatically set
 					perm=Public/Private
 					License
 					Content / file upload

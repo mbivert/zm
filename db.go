@@ -69,6 +69,8 @@ func (db *DB) AddData(d *DataSetIn) error {
 	db.Lock()
 	defer db.Unlock()
 
+	var did int64
+
 	err := db.QueryRow(`
 		INSERT INTO
 			Data (
@@ -79,9 +81,71 @@ func (db *DB) AddData(d *DataSetIn) error {
 		RETURNING Id`,
 			d.Name, d.UserId, d.Type,
 			d.Descr, d.File, "cat",
-			d.Fmt, "", d.UrlInfo).Scan(&d.UserId)
+			d.Fmt, "", d.UrlInfo).Scan(&did)
+
+	if err != nil {
+		return err
+	}
+
+	pub := 0
+	if d.Public {
+		pub = 1
+	}
+
+	// NOTE: _.LastInsertId() is a thing for some DB
+	_, err = db.Exec(`
+		INSERT INTO
+			Permission (DataId, Public)
+		VALUES
+			($1, $2)
+	`, did, pub)
 
 	return err
+}
+
+// XXX meh, that's quite a reduced book; make it a DataGetBooksOut
+// or something perhaps
+type Book struct {
+	Name    string // `json:"name"`
+	Descr   string // `json:"descr"`
+	File    string // `json:"file"`
+	UrlInfo string // `json:"urlinfo"`
+	Owned   bool   // `json:"owned"`
+}
+
+// Grab all books, publics or owned by said user
+func (db *DB) GetBooks(uid auth.UserId) ([]Book, error) {
+	db.Lock()
+	defer db.Unlock()
+
+	rows, err := db.Query(`
+		SELECT
+			Name, Descr, File, UrlInfo, UserId
+		FROM
+			Data, Permission
+		WHERE
+			Data.Id = Permission.DataId
+		AND Data.Type = 'book'
+		AND (Data.UserId = $1 OR Permission.Public >= 1)
+	`, uid)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var bs []Book
+
+	for rows.Next() {
+		var b Book
+		var owner auth.UserId
+		if err := rows.Scan(&b.Name, &b.Descr, &b.File, &b.UrlInfo, &owner); err != nil {
+			return nil, err
+		}
+		b.Owned = owner == uid
+		bs = append(bs, b)
+	}
+	return bs, rows.Err()
 }
 
 // Below is essentially copy-pasted from ../auth/db-sqlite.go,

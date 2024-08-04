@@ -324,6 +324,28 @@ func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 	return nil
 }
 
+type DataGetBooksIn struct {
+	Token string `json:"token"`
+}
+
+type DataGetBooksOut struct {
+	Books []Book `json:"books"`
+}
+
+func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
+	fmt.Println(in)
+	ok, uid, err := auth.IsValidToken(in.Token)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("Not connected!")
+	}
+
+	out.Books, err = db.GetBooks(uid)
+	return err
+}
+
 func main() {
 	// Won't change
 	var s strings.Builder
@@ -347,6 +369,7 @@ func main() {
 	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
 	http.HandleFunc("/data/set", wrap[DataSetIn, DataSetOut](db, DataSet))
+	http.HandleFunc("/data/get/books", wrap[DataGetBooksIn, DataGetBooksOut](db, DataGetBooks))
 
 	// Keep the prefix: the files are still located in a data/ directory
 	http.Handle("/data/", NewFS(&OurFSContext{db}))

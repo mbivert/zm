@@ -30,7 +30,7 @@ func NewDB(path string) (*DB, error) {
 
 // XXX eventually, we'll want this to be cached, but for zm's purposes,
 // this should be moore than enough.
-func (db *DB) CanGet(username, path string) (bool, error) {
+func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 	db.Lock()
 	defer db.Unlock()
 
@@ -43,13 +43,13 @@ func (db *DB) CanGet(username, path string) (bool, error) {
 
 	fmt.Println(path)
 
-	var owner string
+	var owner auth.UserId
 	var public int
 
 	// XXX: meh, path vs. File
 	err := db.QueryRow(`
 		SELECT
-			Permission.Public, User.Name
+			Permission.Public, User.Id
 		FROM
 			Data, Permission, User
 		WHERE
@@ -62,7 +62,7 @@ func (db *DB) CanGet(username, path string) (bool, error) {
 		return false, err
 	}
 
-	return public >= 1 || owner == username, nil
+	return public >= 1 || owner == uid, nil
 }
 
 // Below is essentially copy-pasted from ../auth/db-sqlite.go,
@@ -98,7 +98,7 @@ func (db *DB) AddUser(u *auth.User) error {
 
 // Okay so we're checking the user via its name; could it be
 // convenient to also allow to do it via email?
-func (db *DB) VerifyUser(name string) error {
+func (db *DB) VerifyUser(uid auth.UserId) error {
 	db.Lock()
 	defer db.Unlock()
 
@@ -114,14 +114,14 @@ func (db *DB) VerifyUser(name string) error {
 		SET
 			Verified = $1
 		WHERE
-			Name  = $2
+			Id  = $2
 		RETURNING
 			1
-	`, 1, name).Scan(&x)
+	`, 1, uid).Scan(&x)
 
 
 	if errors.Is(err, sql.ErrNoRows) {
-		err = fmt.Errorf("Invalid username")
+		err = fmt.Errorf("Invalid uid")
 	}
 
 	return err
@@ -136,11 +136,11 @@ func (db *DB) GetUser(u *auth.User) error {
 
 	// TODO: clarify exec vs. query (is there a prepare here?)
 	err := db.QueryRow(`SELECT
-			Name, Email, Passwd, Verified, CDate
+			Id, Name, Email, Passwd, Verified, CDate
 		FROM User WHERE
 			Name  = $1
 		OR  Email = $2
-	`, u.Name, u.Email).Scan(&u.Name, &u.Email, &u.Passwd, &verified, &u.CDate)
+	`, u.Name, u.Email).Scan(&u.Id, &u.Name, &u.Email, &u.Passwd, &verified, &u.CDate)
 
 	if err == nil && verified > 0 {
 		u.Verified = true
@@ -154,12 +154,12 @@ func (db *DB) GetUser(u *auth.User) error {
 	return err
 }
 
-func (db *DB) RmUser(name string) (email string, err error) {
+func (db *DB) RmUser(uid auth.UserId) (email string, err error) {
 	db.Lock()
 	defer db.Unlock()
 
-	err = db.QueryRow(`DELETE FROM User WHERE Name = $1
-		RETURNING Email`, name).Scan(&email)
+	err = db.QueryRow(`DELETE FROM User WHERE Id = $1
+		RETURNING Email`, uid).Scan(&email)
 
 	if errors.Is(err, sql.ErrNoRows) {
 		err = fmt.Errorf("Invalid username")

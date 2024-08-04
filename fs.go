@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"github.com/mbivert/auth"
 )
 
 type SomeErr struct {
@@ -28,69 +29,80 @@ func fails(w http.ResponseWriter, err error) {
 
 type FSContext interface {
 	Root() string
-	IsValidToken(token string) (bool, string, error)
-	CanGet(username, path string) (bool, error)
-	CanSet(username, path, data string) (bool, error)
+	IsValidToken(token string) (bool, auth.UserId, error)
+	CanGet(uid auth.UserId, path string) (bool, error)
+	CanSet(uid auth.UserId, path, data string) (bool, error)
+}
+
+func wrap2(
+	ctx FSContext,
+	f func (FSContext, http.ResponseWriter, *http.Request, auth.UserId) error,
+) (func (http.ResponseWriter, *http.Request)) {
+	return func(w http.ResponseWriter, r *http.Request) {
+		var uid auth.UserId
+		var err error
+		var ok bool
+
+		ctok, err := r.Cookie("token")
+
+		// if !, should always be ErrNoCookie, but we perhaps should check
+		tok := ""
+		if err == nil {
+			tok = ctok.Value
+		}
+
+		// This is a special case: if there's no token, we're dealing
+		// with an anonymous user, who can still access public files.
+		if tok == "" {
+			uid = -1
+		} else {
+			ok, uid, err = ctx.IsValidToken(tok)
+			if err != nil {
+				fails(w, err)
+				return
+			}
+
+			// XXX the cookie has e.g. expired, so consider
+			// this a logged-out query, and reset the cookie.
+			//
+			// This is clumsy, and we'll probably need to do
+			// something like this elsewhere, let alone the
+			// hardcoded cookie name.
+			if !ok {
+				// XXX hack: the cookie has e.g. expired
+				http.SetCookie(w, &http.Cookie{
+					Name:     "token",
+					Value:    "",
+					Path:     "/",
+					MaxAge:   -1,
+					HttpOnly: true,
+				})
+				uid = -1
+	//			return fmt.Errorf("Not connected!")
+			}
+		}
+
+		if err = f(ctx, w, r, uid); err != nil {
+			fails(w, err)
+		}
+	}
 }
 
 func NewFS(ctx FSContext) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
-		if err := FsGet(ctx, w, r); err != nil {
-			fails(w, err)
-		}
-	})
+	mux.HandleFunc("GET /",  wrap2(ctx, FsGet))
+	mux.HandleFunc("POST /", wrap2(ctx, FsSet))
 
 	return mux
 }
 
-func FsGet(ctx FSContext, w http.ResponseWriter, r *http.Request) error {
-	var name string
-	var err error
-	var ok bool
-
-	ctok, err := r.Cookie("token")
-
-	// if !, should always be ErrNoCookie, but we perhaps should check
-	tok := ""
-	if err == nil {
-		tok = ctok.Value
-	}
-
-	// This is a special case: if there's no token, we're dealing
-	// with an anonymous user, who can still access public files.
-	if tok == "" {
-		name = ""
-	} else {
-		ok, name, err = ctx.IsValidToken(tok)
-		if err != nil {
-			return err
-		}
-
-		// XXX the cookie has e.g. expired, so consider
-		// this a logged-out query, and reset the cookie.
-		//
-		// This is clumsy, and we'll probably need to do
-		// something like this elsewhere, let alone the
-		// hardcoded cookie name.
-		if !ok {
-			// XXX hack: the cookie has e.g. expired
-			http.SetCookie(w, &http.Cookie{
-				Name:     "token",
-				Value:    "",
-				Path:     "/",
-				MaxAge:   -1,
-				HttpOnly: true,
-			})
-			name = ""
-//			return fmt.Errorf("Not connected!")
-		}
-	}
-
+func FsGet(
+	ctx FSContext, w http.ResponseWriter, r *http.Request, uid auth.UserId,
+) error {
 	fpath := filepath.Join(ctx.Root(), r.URL.Path)
 
-	ok, err = ctx.CanGet(name, fpath)
+	ok, err := ctx.CanGet(uid, fpath)
 	if err != nil {
 		return err
 	}
@@ -98,18 +110,39 @@ func FsGet(ctx FSContext, w http.ResponseWriter, r *http.Request) error {
 		return fmt.Errorf("Access forbidden")
 	}
 
-	// TODO: So, if this is set, the browser automatically
-	// uncompress things: we should be able to get rid
-	// of paco.
-
-//	if strings.HasSuffix(fpath, ".gz") {
-//		w.Header().Set("Content-Encoding", "gzip")
-//	}
-
 	http.ServeFile(w, r, fpath)
 
 	return nil
 }
+
+// have one directory per used under data/ : data/<userId>/ would be the
+// most resilient to e.g. username changes. But currently, we don't have
+// the id!
+//
+// We can easily compute how much data each user eats, and easily restrict
+// them accordingly.
+//
+// User preferences could eventually be stored there too.
+//
+// The prelude of FsSet/FsGet is identical: we want a wrap()
+func FsSet(
+	ctx FSContext, w http.ResponseWriter, r *http.Request, uid auth.UserId,
+) error {
+	fpath := filepath.Join(ctx.Root(), r.URL.Path)
+
+	ok, err := ctx.CanSet(uid, fpath, "TODO")
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("Access forbidden")
+	}
+
+	// TODO
+
+	return nil
+}
+
 
 // What it would have looked like with a RPC-like handling.
 /*

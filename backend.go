@@ -146,17 +146,17 @@ func (*OurFSContext) Root() string {
 	return dir
 }
 
-func (*OurFSContext) IsValidToken(tok string) (bool, string, error) {
+func (*OurFSContext) IsValidToken(tok string) (bool, auth.UserId, error) {
 	return auth.IsValidToken(tok)
 }
 
-func (ctx *OurFSContext) CanGet(username, path string) (bool, error) {
+func (ctx *OurFSContext) CanGet(uid auth.UserId, path string) (bool, error) {
 	// XXX clumsy I guess
 	path, _ = filepath.Rel(ctx.Root(), path)
-	return ctx.db.CanGet(username, path)
+	return ctx.db.CanGet(uid, path)
 }
 
-func (*OurFSContext) CanSet(username, path, data string) (bool, error) {
+func (*OurFSContext) CanSet(uid auth.UserId, path, data string) (bool, error) {
 	return false, nil
 }
 

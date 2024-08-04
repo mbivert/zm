@@ -148,6 +148,51 @@ func (db *DB) GetBooks(uid auth.UserId) ([]Book, error) {
 	return bs, rows.Err()
 }
 
+type AboutData struct {
+	Type       DataType `json:"type"`
+	Name       string   `json:"name"`
+	UrlInfo    string   `json:"urlinfo"`
+	License    string   `json:"license"`
+	UrlLicense string   `json:"urllicense"`
+}
+
+// This is to build about: we want to retrieve all (public) data
+// for user zhongmu: this is the main data used to make the site
+// work, that for which we usually have Resources, will have
+// automatic updates, etc.
+func (db *DB) GetAboutData() ([]AboutData, error) {
+	db.Lock()
+	defer db.Unlock()
+
+	// XXX/TODO: hardcoding zhongmu's UserId
+	rows, err := db.Query(`
+		SELECT
+			Data.Type, Data.Name, Data.UrlInfo, License.Name, License.URL
+		FROM
+			Data, License, DataLicense
+		WHERE
+			DataLicense.DataId    = Data.Id
+		AND DataLicense.LicenseId = License.Id
+		AND Data.UserId           = 1
+	`)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var xs []AboutData
+
+	for rows.Next() {
+		var x AboutData
+		if err := rows.Scan(&x.Type, &x.Name, &x.UrlInfo, &x.License, &x.UrlLicense); err != nil {
+			return nil, err
+		}
+		xs = append(xs, x)
+	}
+	return xs, rows.Err()
+}
+
 // Below is essentially copy-pasted from ../auth/db-sqlite.go,
 // so that we implements auth.DB.
 //

@@ -90,7 +90,7 @@ CREATE TABLE Data (
 
 	-- Acts as a textual ID in JavaScript code, for clarity to users.
 	-- The Name is unique for each UserId (constrained later)
-	Name      TEXT      UNIQUE NOT NULL,
+	Name      TEXT      NOT NULL,
 
 	-- Owner
 	UserId    BIGSERIAL,

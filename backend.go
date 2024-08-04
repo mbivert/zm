@@ -346,6 +346,19 @@ func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
 	return err
 }
 
+type DataGetAboutDataIn struct {
+}
+
+type DataGetAboutDataOut struct {
+	Datas []AboutData `json:"datas"`
+}
+
+func DataGetAbout(db *DB, in *DataGetAboutDataIn, out *DataGetAboutDataOut) error {
+	var err error
+	out.Datas, err = db.GetAboutData()
+	return err
+}
+
 func main() {
 	// Won't change
 	var s strings.Builder
@@ -369,7 +382,14 @@ func main() {
 	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
 	http.HandleFunc("/data/set", wrap[DataSetIn, DataSetOut](db, DataSet))
-	http.HandleFunc("/data/get/books", wrap[DataGetBooksIn, DataGetBooksOut](db, DataGetBooks))
+	http.HandleFunc(
+		"/data/get/books",
+		wrap[DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
+	)
+	http.HandleFunc(
+		"/data/get/about",
+		wrap[DataGetAboutDataIn, DataGetAboutDataOut](db, DataGetAbout),
+	)
 
 	// Keep the prefix: the files are still located in a data/ directory
 	http.Handle("/data/", NewFS(&OurFSContext{db}))

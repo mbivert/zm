@@ -14,14 +14,29 @@ Current goals:
   - @setup-scripts
   - Working on @backend, @data-organisation; in particular, the (external) auth module
   feels good enough, let's try it for real
+  	- Currently working on a first draft; main features remaining:
+  		-> nuke db.js bin/mkdbjs.sh
+  		-> probably, use Go to generate ../zm-data/LICENSE.md
+  		-> have a way to perform global user-owned data edition
+  		-> allow to submit files for content in data
+  		-> At least allow preferences edition with a textarea
+  		holding the JSON blob
     - verification tests in auth
+    	-> depends as to whether we keep signin/signout in auth
     - trim http dep in auth: use json-rpc
+    	-> evenutally for later
     - @captcha
+    - tests from JS
     - RPC.call() error display
     - verification url, submission & auto-login
     - form & fields management. In particular, we'll soon
       need to be able to edit zm preferences & account details
       (email, name, etc.)
+      	-> For now this is coarsly handled. We may want to have
+      	something smarter, which e.g. builds an object from fields
+      	located somewhere below a <form>, where the fields are
+      	identified by e.g. having extra "get/set/check" registered
+      	methods (heck, we could even use a class)
 
 Major user features (~expected order):
   - @backend
@@ -427,9 +442,6 @@ A few identified bugs. SQL database scheme prototype.
 		may want to lift those to allow different users to register
 		the potentially different data under the same name.
 
-		- Currently, each Data is associated to a Resource, but
-		e.g. user input-ed book won't necessarily have one.
-
 		- All Data files are currently available as via a static
 		path (HTTP); no permission guards.
 
@@ -439,23 +451,6 @@ A few identified bugs. SQL database scheme prototype.
 			we might even want to use a single form for *all* data
 			types. This can be added on the account page (future login.html)
 			- AddBook()
-				- Form fields:
-					Token:
-						we must be authenticated to add new Data.
-						This will be chained on the server side,
-						so we also need to remember to update our
-						locate document.cookie accordingly when
-						receiving an answer.
-					Name
-					Type='book'
-					Descr
-					Fmt='markdown'    // ~always?
-					(Data.File)       // automatically generated
-					(Formatter=cat)     // automatically set
-					perm=Public/Private
-					License
-					Content / file upload
-
 			- AddLicense()
 				- Use a component to wrap creation of a new license
 				around selecting a potentially existing one
@@ -465,9 +460,6 @@ A few identified bugs. SQL database scheme prototype.
 					URL
 
 			- AddDict()
-				- Really, that's pretty much the same thing as
-				for AddBook, but with different Type/Fmt. So we
-				may finally want to have a AddData() and call that
 
 			// Those two are for later, but keep them in mind
 			/ AddTranslation()

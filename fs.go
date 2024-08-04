@@ -62,15 +62,29 @@ func FsGet(ctx FSContext, w http.ResponseWriter, r *http.Request) error {
 	// with an anonymous user, who can still access public files.
 	if tok == "" {
 		name = ""
-
-	// But if he's logged-in, then things should check
 	} else {
 		ok, name, err = ctx.IsValidToken(tok)
 		if err != nil {
 			return err
 		}
+
+		// XXX the cookie has e.g. expired, so consider
+		// this a logged-out query, and reset the cookie.
+		//
+		// This is clumsy, and we'll probably need to do
+		// something like this elsewhere, let alone the
+		// hardcoded cookie name.
 		if !ok {
-			return fmt.Errorf("Not connected!")
+			// XXX hack: the cookie has e.g. expired
+			http.SetCookie(w, &http.Cookie{
+				Name:     "token",
+				Value:    "",
+				Path:     "/",
+				MaxAge:   -1,
+				HttpOnly: true,
+			})
+			name = ""
+//			return fmt.Errorf("Not connected!")
 		}
 	}
 

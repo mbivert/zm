@@ -7,3 +7,7 @@ site/base/full.js
 nohup.out
 backend
 db.sqlite
+db-dev.sqlite
+db-prod.sqlite
+user-prod.sqlite
+schema-dbjs.sql

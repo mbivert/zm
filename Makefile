@@ -51,7 +51,7 @@ dev:
 	@echo "Re(starting) local dev server on http://localhost:${port}..."
 	@lsof -i -P -n|awk '/TCP.*'${port}'.*LISTEN/ { print "kill " $$2 }' | sh
 	@#nohup python3 -m http.server ${port} -d ./site-ready/ &
-	@nohup go run backend.go fs.go &
+	@nohup go run backend.go fs.go db.go &
 	@$(eval ROOT := )
 
 .PHONY: help
@@ -108,7 +108,7 @@ site: typecheck check-data config site/base/pako.min.js  \
 		site/content/about.html site/base/full.js \
 		quick-site
 
-backend: backend.go fs.go
+backend: backend.go fs.go db.go
 	@echo Building backend...
 	@go build $^
 
@@ -132,8 +132,8 @@ check-data: ./lib/db.js ./lib/enums.js data ./bin/check-data.js data
 	@echo Ensure data files are loadable...
 	@node ./bin/check-data.js
 
-dev-site: dev site
-quick-dev-site: dev quick-site
+dev-site: ./db-dev.sqlite dev site
+quick-dev-site: ./db-dev.sqlite dev quick-site
 
 ${ZM_DATA}/LICENSE.md: ./site/base/full.js
 	@echo "Re(creating) ${ZM_DATA}/LICENSE.md..."
@@ -150,9 +150,18 @@ ${ZM_DATA}/LICENSE.md: ./site/base/full.js
 	@echo Creating $@...
 	@sh ./bin/mkenumsjs.sh ./lib.d.ts > $@
 
-./lib/db.js: ./schema.sql ./bin/mkdbjs.sh
+./db-dev.sqlite: ./schema.sql ./user-dev.sql
 	@echo Creating $@...
-	@sh ./bin/mkdbjs.sh ./schema.sql > $@
+	@rm -rf $@
+	@cat $^ | sqlite3 $@
+
+./schema-dbjs.sql: ./schema.sql ./user-dev.sql ./dbjs.sql
+	@echo Creating $@...
+	@cat $^ > $@
+
+./lib/db.js: ./schema-dbjs.sql ./bin/mkdbjs.sh
+	@echo Creating $@...
+	@sh ./bin/mkdbjs.sh $< > $@
 
 ./bin/tests.js: ./bin/mktestsjs.sh ./site/base/full.js ./site/base/full-tests.js
 	@echo Creating $@...

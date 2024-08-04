@@ -124,6 +124,7 @@ declare enum DataType {
 	Decomp = "decomp",
 	Big5   = "big5",
 	Book   = "book",
+	Pieces = "pieces",
 }
 
 /*
@@ -140,6 +141,7 @@ declare enum DataFmt {
 	Markdown        = "markdown",
 	SWMarkdown      = "sw-markdown", // temporary, to be removed
 	SimpleDict      = "simple-dict",
+	Pieces          = "pieces",
 }
 
 /*

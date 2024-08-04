@@ -78,6 +78,7 @@ CREATE TABLE Resource (
 CREATE TABLE Data (
 	Id        BIGSERIAL PRIMARY KEY,
 
+	-- Owner
 	UserId    BIGSERIAL,
 
 	-- Acts as a textual ID in JavaScript code, for clarity to users.
@@ -95,7 +96,11 @@ CREATE TABLE Data (
 		'big5',
 
 		-- Book, article, text to be inspected
-		'book'
+		'book',
+
+		-- Pieces (to tie a source and a translation)
+		-- XXX probably temporary
+		'pieces'
 	))                  NOT NULL,
 
 	Descr     TEXT,
@@ -128,7 +133,10 @@ CREATE TABLE Data (
 		'sw-markdown',
 
 		-- Basic "word\tdefinitions" format; perhaps temporary
-		'simple-dict'
+		'simple-dict',
+
+		-- Only one type of pieces for now
+		'pieces'
 	))                  NOT NULL,
 
 	-- The code that loads a file from its .Fmt sometimes needs
@@ -198,13 +206,8 @@ CREATE TABLE DataResource (
 -- SQL auto-increment feature; we'll add those via proper
 -- SQL requests yet to be written anyway.
 
--- Default users; we'll have something better for production.
-INSERT INTO User
-	(Id, Name, Email, Passwd, Verified, CDate)
-VALUES
-	(1, 'zm', 'foo@bar.com', 'redacted', 1, 1722726391),
-	(2, 'mb', 'bar@bar.com', 'redacted', 2, 1722726391)
-	;
+-- Note: User table is filled in user-dev.sql; there'll be
+-- a non-committed user-prod.sql.
 
 -- Known licenses
 INSERT INTO License
@@ -315,7 +318,7 @@ VALUES
 	(
 		8, 1, 'Shuowen Jiezi, book (Wikisource)', 'book', 'WikiSource version of the ShuoWen JieZi',
 		'markdown', '',
-		'data/books/shuowen', 'mkshuowen-ws-book.js',
+		'data/books/shuo-wen-jie-zi.src', 'mkshuowen-ws-book.js',
 		'https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97'
 	),
 	(
@@ -339,21 +342,22 @@ VALUES
 	(
 		12, 1, 'Bai Jia Xing', 'book', 'Bai Xia Jing',
 		'markdown', '',
-		'data/books/bai-jia-xing', 'cat',
+		'data/books/bai-jia-xing.src', 'cat',
 		-- https://en.wikipedia.org/wiki/Hundred_Family_Surnames
 		'https://www.gutenberg.org/files/25196/25196-0.txt'
 	),
 	(
 		13, 1, 'Qian Zi Wen', 'book', 'Qian Zi Wen',
 		'markdown', '',
-		'data/books/qian-zi-wen', 'cat',
+		'data/books/qian-zi-wen.src', 'cat',
 		-- https://en.wikipedia.org/wiki/Thousand_Character_Classic
 		'https://zh.wikisource.org/wiki/%E5%8D%83%E5%AD%97%E6%96%87'
 	),
 	(
-		14, 1, 'San Zi Jing', 'book', 'San Zi Jing (Herbert Giles, ctext.org)',
+		14, 1, '三字經 (Three Character Classic)', 'book',
+		'Three Character Classic, original',
 		'markdown', '',
-		'data/books/qian-zi-wen', 'cat',
+		'data/books/san-zi-jing.src', 'cat',
 		'https://ctext.org/three-character-classic'
 	),
 	(
@@ -383,10 +387,61 @@ VALUES
 	(
 		19, 1, 'Art of war (partial)', 'book', 'Sun-Tzu s Art of war',
 		'markdown', '',
-		'data/books/art-of-war', 'cat',
+		'data/books/art-of-war.src', 'cat',
 		'https://ctext.org/art-of-war/'
+	),
+	(
+		20, 1, 'Three Character Classic (translation)', 'book',
+		'Three Character Classic translated by Herbert Giles',
+		'markdown', '',
+		'data/books/san-zi-jing.tr', 'cat',
+		'https://ctext.org/three-character-classic'
+	),
+	(
+		21, 1, 'Three Character Classic (pieces)', 'pieces',
+		'Link between original & translation',
+		'pieces', '',
+		'data/books/san-zi-jing.pcs', 'cat',
+		'https://ctext.org/three-character-classic'
+	),
+	(
+		22, 1, 'Art of war (translation)', 'book', 'Sun-Tzu s Art of war',
+		'markdown', '',
+		'data/books/art-of-war.tr', 'cat',
+		'https://ctext.org/art-of-war/'
+	),
+	(
+		23, 1, 'Art of war (pieces)', 'pieces', 'Sun-Tzu s Art of war',
+		'pieces', '',
+		'data/books/art-of-war.pcs', 'cat',
+		'https://ctext.org/art-of-war/'
+	),
+	(
+		24, 1, 'Le Classique des Trois Caractères', 'book',
+		'Le Classique des Trois Caractères, traduit par Deverge',
+		'markdown', '',
+		'data/books/san-zi-jing-fr.tr', 'cat',
+		-- Not sure it's the one I took it from though. Don't remember.
+		'http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing&s=1&lang=fr'
+	),
+	(
+		25, 1, 'Le Classique des Trois Caractères (pieces)', 'pieces',
+		'',
+		'pieces', '',
+		'data/books/san-zi-jing-fr.pcs', 'cat',
+		-- Not sure it's the one I took it from though. Don't remember.
+		'http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing&s=1&lang=fr'
+	),
+	(
+		26, 1, 'Father Serge, Tolstoï (Отец Сергий, Толстой) (partial)', 'book',
+		'First few paragraphs from Tolstoï s Father Serge, in Russian',
+		'markdown', '',
+		'data/books/father-serge-tolstoi.src', 'cat',
+		-- Definitely not the correct link (those are translations); it's late.
+		'https://en.wikisource.org/wiki/Father_Sergius'
 	)
 	;
+--	(Id, UserId, Name, Type, Descr, Fmt, FmtParams, File, Formatter, UrlInfo)
 
 INSERT INTO DataLicense
 	(DataId, LicenseId, URL, Comment)
@@ -409,7 +464,14 @@ VALUES
 	(16, 2, 'https://commons.wikimedia.org/wiki/Commons:Chinese_characters_decomposition', 'Keeping same license as WikiMedia s'),
 	(17, 3, 'https://chine.in/mandarin/dictionnaire/CFDICT/', 'Extracted from CFDICT'),
 	(18, 6, 'https://github.com/gugray/HanDeDict', 'Extracted from HanDeDict'),
-	(19, 1, 'https://archive.org/details/artofwaroldestmi00suntuoft/', 'no copyrigths')
+	(19, 1, 'https://archive.org/details/artofwaroldestmi00suntuoft/', 'no copyrigths'),
+	(20, 1, 'https://en.wikisource.org/wiki/San_Tzu_Ching', 'no copyrigths'),
+	(21, 1, 'https://en.wikisource.org/wiki/San_Tzu_Ching', 'no copyrigths'),
+	(22, 1, 'https://archive.org/details/artofwaroldestmi00suntuoft/', 'no copyrigths'),
+	(23, 1, 'https://archive.org/details/artofwaroldestmi00suntuoft/', 'no copyrigths'),
+	(24, 1, 'http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing&s=1&lang=fr', 'no copyrights'),
+	(25, 1, 'http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing&s=1&lang=fr', 'no copyrights'),
+	(26, 1, 'https://en.wikisource.org/wiki/Father_Sergius', 'no copyrights')
 	;
 
 INSERT INTO DataResource
@@ -447,22 +509,12 @@ VALUES
 	(16, 1),
 	(17, 1),
 	(18, 1),
-	(19, 1)
+	(19, 1),
+	(20, 1),
+	(21, 1),
+	(22, 1),
+	(23, 1),
+	(24, 1),
+	(25, 1),
+	(26, 1)
 	;
-
--- SQLite JSON export:
--- .mode json
-
--- NOTE: we're not linking to Resource because not all Data have a Resource,
--- such Data would be skipped.
---
--- Also, the Resource won't be of much use JS-side, so this should be
--- realistic enough.
-SELECT
-	Data.Id, Data.Name, Data.Type, Data.Descr, Data.Fmt, Data.FmtParams,
-	Data.File, Data.UrlInfo,
-	License.name AS License,
-	License.url  AS UrlLicense
-FROM Data, License, DataLicense
-	WHERE Data.Id      = DataLicense.DataId
-	AND   License.Id   = DataLicense.LicenseId;

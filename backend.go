@@ -138,7 +138,9 @@ func isDir(path string) (bool, error) {
 	return fi.IsDir(), nil
 }
 
-type OurFSContext struct{}
+type OurFSContext struct{
+	db *DB
+}
 
 func (*OurFSContext) Root() string {
 	return dir
@@ -148,8 +150,10 @@ func (*OurFSContext) IsValidToken(tok string) (bool, string, error) {
 	return auth.IsValidToken(tok)
 }
 
-func (*OurFSContext) CanGet(username, path string) (bool, error) {
-	return true, nil
+func (ctx *OurFSContext) CanGet(username, path string) (bool, error) {
+	// XXX clumsy I guess
+	path, _ = filepath.Rel(ctx.Root(), path)
+	return ctx.db.CanGet(username, path)
 }
 
 func (*OurFSContext) CanSet(username, path, data string) (bool, error) {
@@ -164,9 +168,10 @@ func main() {
 		"version" : C.Version,
 	})
 
-	fn   := "db.sqlite"
+	// TODO: this should be in the Config
+	fn   := "db-dev.sqlite"
 
-	db, err := auth.NewSQLite(fn)
+	db, err := NewDB(fn)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -178,7 +183,7 @@ func main() {
 	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
 	// Keep the prefix: the files are still located in a data/ directory
-	http.Handle("/data/", NewFS(&OurFSContext{}))
+	http.Handle("/data/", NewFS(&OurFSContext{db}))
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)

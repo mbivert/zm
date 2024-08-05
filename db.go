@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"strconv"
 	"strings"
 	_ "github.com/mattn/go-sqlite3"
 
@@ -160,7 +161,7 @@ type AboutData struct {
 // for user zhongmu: this is the main data used to make the site
 // work, that for which we usually have Resources, will have
 // automatic updates, etc.
-func (db *DB) GetAboutData() ([]AboutData, error) {
+func (db *DB) GetAbouts() ([]AboutData, error) {
 	db.Lock()
 	defer db.Unlock()
 
@@ -186,6 +187,52 @@ func (db *DB) GetAboutData() ([]AboutData, error) {
 	for rows.Next() {
 		var x AboutData
 		if err := rows.Scan(&x.Type, &x.Name, &x.UrlInfo, &x.License, &x.UrlLicense); err != nil {
+			return nil, err
+		}
+		xs = append(xs, x)
+	}
+	return xs, rows.Err()
+}
+
+func (db *DB) GetMetas(ms []string) ([]Metas, error) {
+	db.Lock()
+	defer db.Unlock()
+
+	// XXX/TODO: when testing, see if the SQL is solid enough
+	// for not to be guarded as such.
+	if len(ms) == 0 {
+		return []Metas{}, nil
+	}
+
+	// ys is to create a list of $1, $2, etc.
+	// zs is because db.Query() requires an []any
+	ys := make([]string, len(ms))
+	zs := make([]any, len(ms))
+	for i, v := range ms {
+		ys[i] = "$"+strconv.Itoa(i+1)
+		zs[i] = v
+	}
+
+	// XXX/TODO: hardcoding zhongmu's UserId
+	rows, err := db.Query(`
+		SELECT
+			Type, Name, Fmt, File
+		FROM
+			Data
+		WHERE
+			Name in (`+strings.Join(ys, ", ")+`)
+	`, zs...)
+	if err != nil {
+		return nil, err
+	}
+
+	defer rows.Close()
+
+	var xs []Metas
+
+	for rows.Next() {
+		var x Metas
+		if err := rows.Scan(&x.Type, &x.Name, &x.Fmt, &x.File); err != nil {
 			return nil, err
 		}
 		xs = append(xs, x)

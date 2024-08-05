@@ -346,16 +346,39 @@ func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
 	return err
 }
 
-type DataGetAboutDataIn struct {
+type DataGetAboutIn struct {
 }
 
-type DataGetAboutDataOut struct {
+type DataGetAboutOut struct {
 	Datas []AboutData `json:"datas"`
 }
 
-func DataGetAbout(db *DB, in *DataGetAboutDataIn, out *DataGetAboutDataOut) error {
+func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) error {
 	var err error
-	out.Datas, err = db.GetAboutData()
+	out.Datas, err = db.GetAbouts()
+	return err
+}
+
+type DataGetMetasIn struct {
+	Names []string `json:"names"`
+}
+
+// TODO: we may want to merge this with AboutData;
+// naming for sure will have to be unified.
+type Metas struct {
+	Type       DataType `json:"Type"`
+	Name       string   `json:"Name"`
+	Fmt        DataFmt  `json:"Fmt"`
+	File       string   `json:"File"`
+}
+
+type DataGetMetasOut struct {
+	Metas []Metas `json:"metas"`
+}
+
+func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) error {
+	var err error
+	out.Metas, err = db.GetMetas(in.Names)
 	return err
 }
 
@@ -388,7 +411,12 @@ func main() {
 	)
 	http.HandleFunc(
 		"/data/get/about",
-		wrap[DataGetAboutDataIn, DataGetAboutDataOut](db, DataGetAbout),
+		wrap[DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
+	)
+
+	http.HandleFunc(
+		"/data/get/metas",
+		wrap[DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
 	)
 
 	// Keep the prefix: the files are still located in a data/ directory

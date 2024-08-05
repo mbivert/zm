@@ -16,7 +16,8 @@ Current goals:
   feels good enough, let's try it for real
   	- Currently working on a first draft; main features remaining:
   		-> nuke db.js bin/mkdbjs.sh
-  		-> probably, use Go to generate ../zm-data/LICENSE.md
+  			-> Remains in two places: bin/check-data.js and
+  			bin/mklicense.js
   		-> have a way to perform global user-owned data edition
   		-> allow to submit files for content in data
   		-> At least allow preferences edition with a textarea

@@ -7,6 +7,19 @@ First paragraph of each closed entry contains a closing statement.
 
 # Entries
 
+## medium @captcha
+	2024-08-06: Not sure how great the selected captcha lib is;
+	should be good enough to prevent automated abuse from dumb
+	bots.
+
+	Some ideas:
+	  - historical (not solid): https://github.com/dchest/captcha
+	  - very young, requires some JS, behavioral: https://github.com/wenlng/go-captcha/
+	  - https://github.com/steambap/captcha
+	  - https://github.com/mojocn/base64Captcha
+	    I'm not sure how much better it is from dchest in terms
+	    of efficiency, seems to be the same kind of generated captchas
+
 ## medium @data-organisation
 	2024-08-03: this is still a WIP, but to declutter TODO.md
 	Regarding file access, we want them to be cached by the browser

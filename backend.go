@@ -30,6 +30,7 @@ import (
 //	"io/fs"
 	"math/rand"
 	"errors"
+	"github.com/mojocn/base64Captcha"
 )
 
 
@@ -382,6 +383,89 @@ func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) error {
 	return err
 }
 
+var captcha *base64Captcha.Captcha
+
+type GetCaptchaIn struct {
+}
+
+type GetCaptchaOut struct {
+	Id     string
+	B64Img string
+}
+
+func GetCaptcha(_ *DB, in *GetCaptchaIn, out *GetCaptchaOut) error {
+	id, b64s, _, err := captcha.Generate()
+	if err != nil {
+		return err
+	}
+
+	out.Id     = id
+	out.B64Img = b64s
+	return nil
+}
+
+type CheckCaptchaIn struct {
+	Id     string
+	Answer string
+}
+
+type CheckCaptchaOut struct {
+	Match     bool
+	GetCaptchaOut
+}
+
+func CheckCaptcha(_ *DB, in *CheckCaptchaIn, out *CheckCaptchaOut) error {
+	// true means we want to delete the captcha
+	// (we'll generate a new one automatically)
+	if out.Match = captcha.Verify(in.Id, in.Answer, true); out.Match {
+		return nil
+	}
+
+	// Failure: regenerate a new captcha
+	id, b64s, _, err := captcha.Generate()
+	if err != nil {
+		return err
+	}
+
+	out.Id     = id
+	out.B64Img = b64s
+	return nil
+}
+
+type SigninIn struct {
+	auth.SigninIn
+
+	CaptchaId     string
+	CaptchaAnswer string
+}
+
+type SigninOut struct {
+	auth.SigninOut
+
+	CaptchaMatch  bool
+	CaptchaId     string
+	CaptchaB64Img string
+}
+
+func Signin(db *DB, in *SigninIn, out *SigninOut) error {
+	ccout := CheckCaptchaOut{}
+	err := CheckCaptcha(
+		db,
+		&CheckCaptchaIn{in.CaptchaId, in.CaptchaAnswer},
+		&ccout,
+	)
+	println("match", ccout.Match)
+	out.CaptchaMatch  = ccout.Match
+	out.CaptchaId     = ccout.Id
+	out.CaptchaB64Img = ccout.B64Img
+
+	if err != nil || !out.CaptchaMatch {
+		return err
+	}
+
+	return auth.Signin(db, &in.SigninIn, &out.SigninOut)
+}
+
 func main() {
 	// Won't change
 	var s strings.Builder
@@ -404,6 +488,10 @@ func main() {
 
 	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
+	// XXX Overide auth.Signin to add captcha checks; should
+	// be temporary.
+	http.HandleFunc("/auth/signin", wrap[SigninIn, SigninOut](db, Signin))
+
 	http.HandleFunc("/data/set", wrap[DataSetIn, DataSetOut](db, DataSet))
 	http.HandleFunc(
 		"/data/get/books",
@@ -413,6 +501,14 @@ func main() {
 		"/data/get/about",
 		wrap[DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
 	)
+
+	captcha = base64Captcha.NewCaptcha(
+		base64Captcha.NewDriverDigit(100, 240, 4, 0.7, 80),
+		base64Captcha.DefaultMemStore,
+	)
+
+	http.HandleFunc("/captcha/get", wrap[GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
+	http.HandleFunc("/captcha/check", wrap[CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
 
 	http.HandleFunc(
 		"/data/get/metas",

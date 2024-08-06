@@ -11,7 +11,6 @@ package main
  */
 
 import (
-	"encoding/json"
 	"flag"
 	"html/template"
 	"io"
@@ -28,34 +27,18 @@ import (
 //	"compress/gzip"
 	"fmt"
 //	"io/fs"
-	"math/rand"
-	"errors"
 	"github.com/mojocn/base64Captcha"
 )
 
-
-// Copied from ../auth/utils.go; export feels off
-const (
-	alnum = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ123456789"
-)
-
-// Generate a random string of n bytes
-func randString(n int) string {
-	buf := make([]byte, n)
-
-	for i := 0; i < n; i++ {
-		buf[i] = alnum[rand.Intn(len(alnum))]
-	}
-
-	return string(buf)
-}
-
-type Config struct {
-	Version string `json:"version"`
-	Root    string `json:"root"`
-}
-
 var C Config
+
+// CLI parameters
+var port     string
+var usock    string
+var dir      string
+var fastcgi  bool
+var configFn string
+var openbsd  bool
 
 var indexPageTmpl = template.Must(template.New("").Parse(""+
 `<!DOCTYPE html>
@@ -122,40 +105,19 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 </html>
 `));
 
-var port     string
-var usock    string
-var dir      string
-var fastcgi  bool
-var configFn string
-var openbsd  bool
-
 func init() {
-	flag.StringVar(&port,  "p", ":8001", "TCP address to listen to")
-	flag.StringVar(&dir,   "d", "./site-ready/", "HTTP root location")
-	flag.StringVar(&usock, "u", "", "If set, listen on unix socket over TCP port")
-	flag.BoolVar(&fastcgi, "f", false, "If set, use the UNIX socket and FastCGI")
-	flag.StringVar(&configFn, "c", "config.json", "/path/to/config.json")
-	flag.BoolVar(&openbsd, "o", false, "Tweaks for OpenBSD")
+	flag.StringVar(&port,     "p", ":8001",         "TCP address to listen to")
+	flag.StringVar(&dir,      "d", "./site-ready/", "HTTP root location")
+	flag.StringVar(&usock,    "u", "",              "If set, listen on unix socket over TCP port")
+	flag.BoolVar(&fastcgi,    "f", false,           "If set, use the UNIX socket and FastCGI")
+	flag.StringVar(&configFn, "c", "config.json",   "/path/to/config.json")
+	flag.BoolVar(&openbsd,    "o", false,           "Tweaks for OpenBSD")
 
 	flag.Parse();
 
-	data, err := os.ReadFile(configFn)
-	if err != nil {
-		log.Fatal("Cannot read '"+configFn+"': ", err)
+	if err := loadConf(configFn, &C); err != nil {
+		log.Fatal(err)
 	}
-
-	if err := json.Unmarshal(data, &C); err != nil {
-		log.Fatal("Error while parsing '"+configFn+"': ", err)
-	}
-}
-
-func isDir(path string) (bool, error) {
-	fi, err := os.Stat(path)
-	if err != nil {
-		return false, err
-	}
-
-	return fi.IsDir(), nil
 }
 
 type OurFSContext struct{
@@ -178,209 +140,6 @@ func (ctx *OurFSContext) CanGet(uid auth.UserId, path string) (bool, error) {
 
 func (*OurFSContext) CanSet(uid auth.UserId, path, data string) (bool, error) {
 	return false, nil
-}
-
-// fancy
-func wrap[Tin, Tout any](
-	db *DB, f func(db *DB, in *Tin, out *Tout) error,
-) func(w http.ResponseWriter, r *http.Request) {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var in Tin
-		var out Tout
-
-		r.Body = http.MaxBytesReader(w, r.Body, 1048576)
-		err := json.NewDecoder(r.Body).Decode(&in)
-		if err != nil {
-			log.Println(err)
-			err = fmt.Errorf("JSON decoding failure")
-			goto err
-		}
-
-		err = f(db, &in, &out)
-		if err != nil {
-			goto err
-		}
-
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		err = json.NewEncoder(w).Encode(out)
-
-		if err != nil {
-			log.Println(err)
-			err = fmt.Errorf("JSON encoding failure")
-			goto err
-		}
-
-		return
-
-	err:
-		fails(w, err)
-		return
-	}
-}
-
-type DataType string
-
-// XXX we have it 3 times now: JS, Go, SQL
-const (
-	dataTDict DataType = "dict"
-	dataTDecomp        = "decomp"
-	dataTBig5          = "big5"
-	dataTBook          = "book"
-	dataTPieces        = "pieces"
-)
-
-type DataFmt string
-
-const (
-	dataFCCCEdict DataFmt = "cc-cedict"
-	dataFWMDecomp         = "wm-decomp"
-	dataFChise            = "chise"
-	dataFUnicodeBig5      = "unicode-big5"
-	dataFMarkdown         = "markdown"
-	dataFSWMarkdown       = "sw-markdown"
-	dataFSimpleDict       = "simple-dict"
-	dataFPieces           = "pieces"
-)
-
-type DataSetIn struct {
-	Token     string   // `json:"token"`
-	Name      string   // `json:"name"`
-	Type      DataType // `json:"type"`
-	Descr     string   // `json:"descr"`
-	Fmt       DataFmt  // `json:"fmt"`
-
-	Public    bool     // `json:"public"`
-	LicenseId int64    // `json:"licenseid"`
-
-	// XXX We at least would want to check that
-	// this looks like a URL
-	// rename to url?
-	UrlInfo   string   // `json:"urlinfo"`
-
-	// Okay, we'll do that for now, this should be
-	// good enough for a first draft, and small documents.
-	Content   string   // `json:"content"`
-
-	// This two are automatically computed
-	File      string
-	UserId    auth.UserId
-}
-
-type DataSetOut struct {
-}
-
-// NOTE: theoretically, we'd need a lock; practically, much less so...
-func mkRandPath(uid auth.UserId) string {
-	path := ""
-	for {
-		path = fmt.Sprintf("data/%d/%s", uid, randString(15))
-		fpath := filepath.Join(dir, path)
-		_, err := os.Stat(fpath);
-		if errors.Is(err, os.ErrNotExist) {
-			break
-		}
-		// TODO: cleaner
-		if err != nil {
-			panic(err)
-		}
-
-	}
-	return path
-}
-
-func WriteFile(path string, content []byte) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
-	}
-	return os.WriteFile(path, content, 0644)
-}
-
-func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
-	fmt.Println(in)
-	ok, uid, err := auth.IsValidToken(in.Token)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("Not connected!")
-	}
-
-	in.File = mkRandPath(uid)
-	in.UserId = uid
-
-	// NOTE: we (try to) write the file before adding to the
-	// DB because it's easier to revert in case of issue
-	fpath := filepath.Join(dir, in.File)
-	if err := WriteFile(fpath, []byte(in.Content)); err != nil {
-		return err
-	}
-
-	if err := db.AddData(in); err != nil {
-		// Remove the file we've just added
-		if err2 := os.RemoveAll(fpath); err2 != nil {
-			err = fmt.Errorf("%s; in addition: %s", err, err2)
-		}
-		return err
-	}
-	return nil
-}
-
-type DataGetBooksIn struct {
-	Token string `json:"token"`
-}
-
-type DataGetBooksOut struct {
-	Books []Book `json:"books"`
-}
-
-func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
-	fmt.Println(in)
-	ok, uid, err := auth.IsValidToken(in.Token)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("Not connected!")
-	}
-
-	out.Books, err = db.GetBooks(uid)
-	return err
-}
-
-type DataGetAboutIn struct {
-}
-
-type DataGetAboutOut struct {
-	Datas []AboutData `json:"datas"`
-}
-
-func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) error {
-	var err error
-	out.Datas, err = db.GetAbouts()
-	return err
-}
-
-type DataGetMetasIn struct {
-	Names []string `json:"names"`
-}
-
-// TODO: we may want to merge this with AboutData;
-// naming for sure will have to be unified.
-type Metas struct {
-	Type       DataType `json:"Type"`
-	Name       string   `json:"Name"`
-	Fmt        DataFmt  `json:"Fmt"`
-	File       string   `json:"File"`
-}
-
-type DataGetMetasOut struct {
-	Metas []Metas `json:"metas"`
-}
-
-func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) error {
-	var err error
-	out.Metas, err = db.GetMetas(in.Names)
-	return err
 }
 
 var captcha *base64Captcha.Captcha
@@ -454,7 +213,7 @@ func Signin(db *DB, in *SigninIn, out *SigninOut) error {
 		&CheckCaptchaIn{in.CaptchaId, in.CaptchaAnswer},
 		&ccout,
 	)
-	println("match", ccout.Match)
+
 	out.CaptchaMatch  = ccout.Match
 	out.CaptchaId     = ccout.Id
 	out.CaptchaB64Img = ccout.B64Img
@@ -490,16 +249,16 @@ func main() {
 
 	// XXX Overide auth.Signin to add captcha checks; should
 	// be temporary.
-	http.HandleFunc("/auth/signin", wrap[SigninIn, SigninOut](db, Signin))
+	http.HandleFunc("/auth/signin", wrap[DB, SigninIn, SigninOut](db, Signin))
 
-	http.HandleFunc("/data/set", wrap[DataSetIn, DataSetOut](db, DataSet))
+	http.HandleFunc("/data/set", wrap[DB, DataSetIn, DataSetOut](db, DataSet))
 	http.HandleFunc(
 		"/data/get/books",
-		wrap[DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
+		wrap[DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
 	)
 	http.HandleFunc(
 		"/data/get/about",
-		wrap[DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
+		wrap[DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
 	)
 
 	captcha = base64Captcha.NewCaptcha(
@@ -507,12 +266,12 @@ func main() {
 		base64Captcha.DefaultMemStore,
 	)
 
-	http.HandleFunc("/captcha/get", wrap[GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
-	http.HandleFunc("/captcha/check", wrap[CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
+	http.HandleFunc("/captcha/get", wrap[DB, GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
+	http.HandleFunc("/captcha/check", wrap[DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
 
 	http.HandleFunc(
 		"/data/get/metas",
-		wrap[DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
+		wrap[DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
 	)
 
 	// Keep the prefix: the files are still located in a data/ directory

@@ -10,6 +10,8 @@ VERSION := $(shell /bin/date '+%s')
 # dev site HTTP port
 port = 8001
 
+GOFILES = backend.go data.go config.go db.go fs.go utils.go
+
 LIBFILES = lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js \
 	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/dom.js \
 	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
@@ -51,7 +53,7 @@ dev:
 	@echo "Re(starting) local dev server on http://localhost:${port}..."
 	@lsof -i -P -n|awk '/TCP.*'${port}'.*LISTEN/ { print "kill " $$2 }' | sh
 	@#nohup python3 -m http.server ${port} -d ./site-ready/ &
-	@nohup go run backend.go fs.go db.go &
+	@nohup go run ${GOFILES} &
 	@$(eval ROOT := )
 
 .PHONY: help
@@ -108,7 +110,7 @@ site: typecheck check-data config site/base/pako.min.js  \
 		site/content/about.html site/base/full.js \
 		quick-site
 
-backend: backend.go fs.go db.go
+backend: ${GOFILES}
 	@echo Building backend...
 	@go build $^
 

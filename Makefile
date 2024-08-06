@@ -17,7 +17,7 @@ LIBFILES = lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js \
 	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
 	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
 	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \
-	lib/view/login.js lib/rpc.js \
+	lib/view/account.js lib/rpc.js lib/account.js \
 	lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js \
 	lib/data/book/wikisource.js lib/data/decomp/chise.js \
 	lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js \
@@ -31,7 +31,7 @@ LIBFILESNOENUMS = lib/assert.js lib/attrs.js lib/bookmark.js \
 	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
 	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
 	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \
-	lib/view/login.js lib/rpc.js \
+	lib/view/account.js lib/rpc.js lib/account.js \
 	lib/view/trbook.js lib/data/big5/big5.js lib/data/book/markdown.js \
 	lib/data/book/wikisource.js lib/data/decomp/chise.js \
 	lib/data/decomp/wmdecomp.js lib/data/dict/cedict.js \

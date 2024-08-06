@@ -80,7 +80,7 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 						<li><a href="{{ .root }}/books.html">Books</a></li>
 						<li><a href="{{ .root }}/help.html">Help</a></li>
 						<li><a href="{{ .root }}/about.html">About</a></li>
-						<li><a href="{{ .root }}/login.html">Login</a></li>
+						<li><a href="{{ .root }}/account.html">Account</a></li>
 					</ul>
 				</div>
 				<div id="important">
@@ -95,7 +95,7 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 			<div id="main"></div>
 			<div id="footer">
 				<p>
-					© Last update: 2024-07-28 - WIP -
+					© Last update: 2024-08-06 - WIP -
 					<a href="https://github.com/mbivert/zm/">code</a> -
 					<a href="https://github.com/mbivert/zm-data/">data</a>;
 					optimized for desktop</p>
@@ -227,8 +227,18 @@ func main() {
 
 	// XXX Overide auth.Signin to add captcha checks; should
 	// be temporary.
+	//
+	// TODO: if we were using the same mux, this should panic(): test
+	// and eventually document it
 	http.HandleFunc("/auth/signin", wrap[DB, SigninIn, SigninOut](db, Signin))
 
+	// TODO: s,/data/set,/set/data & do it for all
+	// TODO: JS typing
+	// TODO: use a context over DB as an argument. Context should
+	// hold eventually a regular context.Context, the DB, dir, captcha
+	// TODO: add an extra CLI parameter --dev or so, and make it so that
+	// the getCaptcha route returns the answer alongside it, so that we
+	// can test things in the front.
 	http.HandleFunc("POST /data/set", wrap[DB, DataSetIn, DataSetOut](db, DataSet))
 	http.HandleFunc(
 		"POST /data/get/books",

@@ -38,7 +38,7 @@ func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 	// XXX this shouldn't happen anymore, but that's
 	// probably handled too lightly upstream.
 	if strings.HasPrefix(path, "/") {
-		panic(path)
+//		panic(path)
 		path = path[1:]
 	}
 

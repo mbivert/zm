@@ -137,3 +137,54 @@ func mkRandPath(uid auth.UserId) string {
 	}
 	return path
 }
+
+const (
+	tokenCookie = "token"
+)
+
+// Reset the cookie token. This can be triggered e.g. when
+// the cookie is now invalid.
+//
+// TODO: For now, this is only relevant in fs.go, but we'll soon
+// drop the Token argument everywhere, and rely on a HttpOnly
+// token cookie everywhere, including in ../auth/.
+func rstTokenCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     tokenCookie,
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1,
+		HttpOnly: true,
+	})
+}
+
+func getTokenCookie(w http.ResponseWriter, r *http.Request) (auth.UserId, error) {
+	var ok bool
+
+	// By default, assume the request was initiated by
+	// someone not logged-in
+	uid := auth.UserId(-1)
+
+	ctok, err := r.Cookie(tokenCookie)
+
+	// Should never happen I guess
+	if err != nil && !errors.Is(err, http.ErrNoCookie) {
+		return -1, err
+
+	// There is a token cookie
+	} else if err == nil && ctok.Value != "" {
+		ok, uid, err = auth.IsValidToken(ctok.Value)
+		if err != nil {
+			return -1, err
+		}
+
+		// The cookie has e.g. expired, so consider
+		// this a logged-out query, and reset the cookie.
+		if !ok {
+			rstTokenCookie(w)
+			uid = -1
+		}
+	}
+
+	return uid, nil
+}

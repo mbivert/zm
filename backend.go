@@ -120,28 +120,6 @@ func init() {
 	}
 }
 
-type OurFSContext struct{
-	db *DB
-}
-
-func (*OurFSContext) Root() string {
-	return dir
-}
-
-func (*OurFSContext) IsValidToken(tok string) (bool, auth.UserId, error) {
-	return auth.IsValidToken(tok)
-}
-
-func (ctx *OurFSContext) CanGet(uid auth.UserId, path string) (bool, error) {
-	// XXX clumsy I guess
-	path, _ = filepath.Rel(ctx.Root(), path)
-	return ctx.db.CanGet(uid, path)
-}
-
-func (*OurFSContext) CanSet(uid auth.UserId, path, data string) (bool, error) {
-	return false, nil
-}
-
 var captcha *base64Captcha.Captcha
 
 type GetCaptchaIn struct {
@@ -251,13 +229,13 @@ func main() {
 	// be temporary.
 	http.HandleFunc("/auth/signin", wrap[DB, SigninIn, SigninOut](db, Signin))
 
-	http.HandleFunc("/data/set", wrap[DB, DataSetIn, DataSetOut](db, DataSet))
+	http.HandleFunc("POST /data/set", wrap[DB, DataSetIn, DataSetOut](db, DataSet))
 	http.HandleFunc(
-		"/data/get/books",
+		"POST /data/get/books",
 		wrap[DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
 	)
 	http.HandleFunc(
-		"/data/get/about",
+		"POST /data/get/about",
 		wrap[DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
 	)
 
@@ -270,12 +248,13 @@ func main() {
 	http.HandleFunc("/captcha/check", wrap[DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
 
 	http.HandleFunc(
-		"/data/get/metas",
+		"POST /data/get/metas",
 		wrap[DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
 	)
 
-	// Keep the prefix: the files are still located in a data/ directory
-	http.Handle("/data/", NewFS(&OurFSContext{db}))
+	http.HandleFunc("GET /data/",  func(w http.ResponseWriter, r *http.Request) {
+		GETData(db, dir, w, r)
+	})
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)

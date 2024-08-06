@@ -1,7 +1,7 @@
 package main
 
 /*
- * Manage all "/:*:/data" related routes.
+ * Manage all "/data/" related routes.
  * This is mostly a wrapper above the corresponding
  * database functions (db-data.go)
  */
@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"github.com/mbivert/auth"
 	"os"
+	"net/http"
 	"path/filepath"
 )
 
@@ -64,6 +65,9 @@ type DataSetIn struct {
 type DataSetOut struct {
 }
 
+// TODO: have per user size limits; encode this in a context,
+// which is to be the first argument of DataSet and probably
+// most other such functions (e.g. ctx.CanWrite(uid, xs))
 func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 	fmt.Println(in)
 	ok, uid, err := auth.IsValidToken(in.Token)
@@ -103,7 +107,6 @@ type DataGetBooksOut struct {
 }
 
 func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
-	fmt.Println(in)
 	ok, uid, err := auth.IsValidToken(in.Token)
 	if err != nil {
 		return err
@@ -123,8 +126,7 @@ type DataGetAboutOut struct {
 	Datas []AboutData `json:"datas"`
 }
 
-func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) error {
-	var err error
+func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) (err error) {
 	out.Datas, err = db.GetAbouts()
 	return err
 }
@@ -146,8 +148,33 @@ type DataGetMetasOut struct {
 	Metas []Metas `json:"metas"`
 }
 
-func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) error {
-	var err error
+func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) (err error) {
 	out.Metas, err = db.GetMetas(in.Names)
 	return err
+}
+
+// "Special" request: this is a "GET /data/..." request; it's
+// been kept as a GET because we want to involve the browser cache
+// For more, see 'DONE.md:/^## medium @data-organisation/'
+func GETData(db *DB, root string, w http.ResponseWriter, r *http.Request) {
+	var ok bool
+
+	uid, err := getTokenCookie(w, r)
+	if err != nil {
+		goto Err
+	}
+
+	ok, err = db.CanGet(uid, r.URL.Path)
+	if !ok {
+		err = fmt.Errorf("Access forbidden")
+	}
+	if err != nil {
+		goto Err
+	}
+
+	http.ServeFile(w, r, filepath.Join(root, r.URL.Path))
+	return
+
+Err:
+	fails(w, err)
 }

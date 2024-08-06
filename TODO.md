@@ -15,6 +15,7 @@ Current goals:
   - Working on @backend, @data-organisation; in particular, the (external) auth module
   feels good enough, let's try it for real
   	- Currently working on a first draft; main features remaining:
+  		-> data edition is mostly done (UI ~works, route is missing)
     - verification tests in auth
     	-> depends as to whether we keep signin/signout in auth
     - trim http dep in auth: use json-rpc

@@ -232,6 +232,7 @@ func main() {
 	// and eventually document it
 	http.HandleFunc("/auth/signin", wrap[DB, SigninIn, SigninOut](db, Signin))
 
+	// TODO: data edition field
 	// TODO: s,/data/set,/set/data & do it for all
 	// TODO: JS typing
 	// TODO: use a context over DB as an argument. Context should
@@ -260,6 +261,16 @@ func main() {
 	http.HandleFunc(
 		"POST /data/get/metas",
 		wrap[DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
+	)
+
+	http.HandleFunc(
+		"/get/my/data",
+		wrap[DB, GetMyDataIn, GetMyDataOut](db, GetMyData),
+	)
+
+	http.HandleFunc(
+		"/get/licenses",
+		wrap[DB, GetLicensesIn, GetLicensesOut](db, GetLicenses),
 	)
 
 	http.HandleFunc("GET /data/",  func(w http.ResponseWriter, r *http.Request) {

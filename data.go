@@ -69,7 +69,7 @@ type DataSetOut struct {
 // which is to be the first argument of DataSet and probably
 // most other such functions (e.g. ctx.CanWrite(uid, xs))
 func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
-	fmt.Println(in)
+	fmt.Println(in, in.LicenseId)
 	ok, uid, err := auth.IsValidToken(in.Token)
 	if err != nil {
 		return err
@@ -98,6 +98,16 @@ func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 	return nil
 }
 
+// XXX meh, that's quite a reduced book; make it a DataGetBooksOut
+// or something perhaps
+type Book struct {
+	Name    string // `json:"name"`
+	Descr   string // `json:"descr"`
+	File    string // `json:"file"`
+	UrlInfo string // `json:"urlinfo"`
+	Owned   bool   // `json:"owned"`
+}
+
 type DataGetBooksIn struct {
 	Token string `json:"token"`
 }
@@ -117,6 +127,14 @@ func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
 
 	out.Books, err = db.GetBooks(uid)
 	return err
+}
+
+type AboutData struct {
+	Type       DataType `json:"type"`
+	Name       string   `json:"name"`
+	UrlInfo    string   `json:"urlinfo"`
+	License    string   `json:"license"`
+	UrlLicense string   `json:"urllicense"`
 }
 
 type DataGetAboutIn struct {
@@ -177,4 +195,87 @@ func GETData(db *DB, root string, w http.ResponseWriter, r *http.Request) {
 
 Err:
 	fails(w, err)
+}
+
+type GetMyDataIn struct {
+	Token string `json:"token"`
+}
+
+// NOTE: we're getting close to './lib.d.ts:/^interface Data/',
+// but not there yet.
+type Data struct {
+	Id          int64
+	Name        string
+
+	Type        DataType
+	Descr       string
+	// .File is only used to fill content in GetMyData();
+	// we return it nevertheless.
+	File        string
+	Fmt         DataFmt
+
+	UrlInfo     string
+
+	Content     string
+
+	Public      bool
+
+	LicenseId   int64
+	LicenseName string
+}
+
+type GetMyDataOut struct {
+	Datas []Data
+}
+
+func loadContents(ds []Data) (error) {
+	for i, d := range ds {
+		// XXX dir is a CLI arg
+		xs, err := os.ReadFile(filepath.Join(dir, d.File))
+		if err != nil {
+			return err
+		}
+
+		ds[i].Content = string(xs)
+	}
+	return nil
+}
+
+func GetMyData(db *DB, in *GetMyDataIn, out *GetMyDataOut) (err error) {
+	ok, uid, err := auth.IsValidToken(in.Token)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return fmt.Errorf("Not connected!")
+	}
+
+	out.Datas, err = db.GetDataOf(uid)
+	if err != nil {
+		return err
+	}
+
+	return loadContents(out.Datas)
+}
+
+type License struct {
+	Id    int64
+	Name  string
+
+	// XXX We currently don't need those, but perhaps we
+	// should grab them too?
+//	Descr string
+//	URL   string
+}
+
+type GetLicensesIn struct {
+}
+
+type GetLicensesOut struct {
+	Licenses []License
+}
+
+func GetLicenses(db *DB, in *GetLicensesIn, out *GetLicensesOut) (err error) {
+	out.Licenses, err = db.GetLicenses()
+	return err
 }

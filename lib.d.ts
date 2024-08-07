@@ -974,7 +974,7 @@ interface FieldDescr {
 	value  ?: string,
 
 	// Used for ftype="enum"
-	options ?: Array<{value : string, name : string}>,
+	options ?: Array<{value : any, name : string}>,
 
 	// Essentially internal
 	tag   ?: string, // tag name; default to "input"

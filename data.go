@@ -39,23 +39,25 @@ const (
 )
 
 type DataSetIn struct {
-	Token     string   // `json:"token"`
-	Name      string   // `json:"name"`
-	Type      DataType // `json:"type"`
-	Descr     string   // `json:"descr"`
-	Fmt       DataFmt  // `json:"fmt"`
+	Token     string   `json:"token"`
+	Name      string   `json:"name"`
+	Type      DataType `json:"type"`
+	Descr     string   `json:"descr"`
+	Fmt       DataFmt  `json:"fmt"`
 
-	Public    bool     // `json:"public"`
-	LicenseId int64    // `json:"licenseid"`
+	Public    bool     `json:"public"`
+
+	// XXX/TODO: yell if LicenseId is incorrect
+	LicenseId int64    `json:"licenseid"`
 
 	// XXX We at least would want to check that
 	// this looks like a URL
 	// rename to url?
-	UrlInfo   string   // `json:"urlinfo"`
+	UrlInfo   string   `json:"urlinfo"`
 
 	// Okay, we'll do that for now, this should be
 	// good enough for a first draft, and small documents.
-	Content   string   // `json:"content"`
+	Content   string   `json:"content"`
 
 	// This two are automatically computed
 	File      string
@@ -101,11 +103,11 @@ func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 // XXX meh, that's quite a reduced book; make it a DataGetBooksOut
 // or something perhaps
 type Book struct {
-	Name    string // `json:"name"`
-	Descr   string // `json:"descr"`
-	File    string // `json:"file"`
-	UrlInfo string // `json:"urlinfo"`
-	Owned   bool   // `json:"owned"`
+	Name    string `json:"name"`
+	Descr   string `json:"descr"`
+	File    string `json:"file"`
+	UrlInfo string `json:"urlinfo"`
+	Owned   bool   `json:"owned"`
 }
 
 type DataGetBooksIn struct {

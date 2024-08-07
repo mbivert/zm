@@ -942,5 +942,50 @@ interface HCutState extends TabItmsStates, WithStack, WithTokens {}
 // NOTE: Failed to have this one inlined...
 interface SPAPage {
 	mk    : (args0 ?: any) => HTMLElement|Promise<HTMLElement>,
-	title : string
+	title : string,
+}
+
+// generally, T is a HTMLElement
+interface FieldHTMLElement extends HTMLInputElement {
+	set   : (arg0: any) => void,
+	get   : ()    => any,
+	check : ()    => boolean,
+	rst   : ()    => void,
+}
+
+/*
+ * In most cases, one will want to create field via
+ * the ftype; the others are mostly used for internal
+ * purposes.
+ *
+ * TODO: add attrs: set various random attributes. Would
+ * supersed name & style already, but also be useful
+ * for e.g. min/max limits on numbers.
+ *
+ * NOTE/TODO: ftype could be an enum, but we also allow
+ * dynamic field registration. If fields.js is used
+ * standalone, the latter makes most sense; if
+ * it's not, the former makes more sense.
+ */
+interface FieldDescr {
+	ftype  : string, // field type: bool, email, enum, string, text, url
+
+	// Optional initialization value. Set via set()
+	value  ?: string,
+
+	// Used for ftype="enum"
+	options ?: Array<{value : string, name : string}>,
+
+	// Essentially internal
+	tag   ?: string, // tag name; default to "input"
+	type  ?: string, // type= (e.g. for tag="input": text, email, password, etc.)
+
+	// If label and name are set, a label will be created and returned
+	// by Fields.mk()
+	label ?: string, // label -- if any -- 's textContent
+	name  ?: string, // field's name="...; / label's for="..."
+
+	// Sometimes convenient for minor style adjustment (there's
+	// a cost to maintaining lib/classes.js).
+	style ?: string, // ad-hoc CSS
 }

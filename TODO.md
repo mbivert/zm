@@ -14,6 +14,7 @@ Current goals:
   - @setup-scripts
   - Working on @backend, @data-organisation; in particular, the (external) auth module
   feels good enough, let's try it for real
+    - login failure when Data.File doesn't exist
   	- Currently working on a first draft; main features remaining:
   		-> data edition is mostly done (UI ~works, route is missing)
     - verification tests in auth

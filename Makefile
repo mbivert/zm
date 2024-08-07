@@ -13,7 +13,7 @@ port = 8001
 GOFILES = backend.go data.go config.go db.go db-user.go utils.go
 
 LIBFILES = lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js \
-	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/dom.js \
+	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/fields.js lib/dom.js \
 	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
 	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
 	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \
@@ -27,7 +27,7 @@ LIBFILES = lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js \
 # Clumsy, but for typechecking, we don't want to have lib/enums.js
 # alongside lib.d.ts, as it'll generate useless conflicts.
 LIBFILESNOENUMS = lib/assert.js lib/attrs.js lib/bookmark.js \
-	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/dom.js \
+	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/fields.js lib/dom.js \
 	lib/links.js lib/log.js lib/main.js lib/move.js lib/stack.js \
 	lib/tests.js lib/user.js lib/utils.js lib/view.js lib/view/help.js \
 	lib/data/dict.js lib/view/book.js lib/view/books.js lib/view/index.js \

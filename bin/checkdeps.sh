@@ -15,6 +15,3 @@ which sqlite3   > /dev/null
 which jq        > /dev/null
 which git       > /dev/null
 which curl      > /dev/null
-
-# Used for dev website.
-which python3   > /dev/null

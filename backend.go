@@ -28,6 +28,7 @@ import (
 	"fmt"
 //	"io/fs"
 	"github.com/mojocn/base64Captcha"
+	"testing"
 )
 
 var C Config
@@ -106,6 +107,9 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 `));
 
 func init() {
+	if testing.Testing() {
+		return
+	}
 	flag.StringVar(&port,     "p", ":8001",         "TCP address to listen to")
 	flag.StringVar(&dir,      "d", "./site-ready/", "HTTP root location")
 	flag.StringVar(&usock,    "u", "",              "If set, listen on unix socket over TCP port")

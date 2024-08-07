@@ -29,19 +29,17 @@ func NewDB(path string) (*DB, error) {
 }
 
 // XXX eventually, we'll want this to be cached, but for zm's purposes,
-// this should be moore than enough.
+// this should be mooore than enough.
 func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 	db.Lock()
 	defer db.Unlock()
 
-	// XXX this shouldn't happen anymore, but that's
+	// XXX/TODO this shouldn't happen anymore, but that's
 	// probably handled too lightly upstream.
 	if strings.HasPrefix(path, "/") {
 //		panic(path)
 		path = path[1:]
 	}
-
-	fmt.Println(path)
 
 	var owner auth.UserId
 	var public int
@@ -58,7 +56,13 @@ func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 		AND Data.UserId == User.Id
 	`, path).Scan(&public, &owner)
 
-	if err != nil {
+	// XXX/TODO: we probably leak bits we shouldn't be leaking here.
+	// (e.g. it's possible to enumerate all files for all users)
+	//
+	// This can (should) be tweaked by the data.go code instead of here.
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, fmt.Errorf("No DB entry with given path: '%s'", path)
+	} else if err != nil {
 		return false, err
 	}
 
@@ -87,6 +91,10 @@ func (db *DB) AddData(d *DataSetIn) error {
 	if err != nil {
 		return err
 	}
+
+	// NOTE: d.Id is a recent field addition, not sure if
+	// it's going to last yet, hence we keep the var did
+	d.Id = did
 
 	pub := 0
 	if d.Public {

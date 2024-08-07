@@ -7,6 +7,7 @@ replace github.com/mbivert/auth => /home/mb/gits/auth/
 require (
 	github.com/mattn/go-sqlite3 v1.14.22
 	github.com/mbivert/auth v0.0.0-20240804031708-ee4d54b02743
+	github.com/mbivert/ftests v1.0.0
 	github.com/mojocn/base64Captcha v1.3.6
 )
 

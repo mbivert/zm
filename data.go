@@ -62,6 +62,10 @@ type DataSetIn struct {
 	// This two are automatically computed
 	File      string
 	UserId    auth.UserId
+
+	// NOTE/TODO: this is for now only used for db tests,
+	// but might come handy for data edition.
+	Id        int64
 }
 
 type DataSetOut struct {

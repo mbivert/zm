@@ -63,7 +63,9 @@ help:
 	@echo "dev-site       : re(create) site-ready/ website for local tests"
 	@echo "quick-dev-site : re(create) site-ready/ website for local tests (quick mode)"
 	@echo "config         : re(create) lib/config.js"
-	@echo "tests          : run tests"
+	@echo "js-tests       : run JS tests"
+	@echo "go-tests       : run Go tests"
+	@echo "tests          : run both JS & Go tests"
 	@echo "typecheck      : run static typechecking via tsc(1)"
 	@echo "data           : update data/* files"
 
@@ -87,10 +89,18 @@ config: ./bin/mkconfigjs.sh
 	@echo "Re(creating) lib/config.js..."
 	@sh ./bin/mkconfigjs.sh "${ROOT}" "${VERSION}"
 
-.PHONY: tests
-tests: typecheck ./bin/tests.js ./lib/enums.js
-	@echo Running tests...
+.PHONY: js-tests
+js-tests: typecheck ./bin/tests.js ./lib/enums.js
+	@echo Running JS tests...
 	@node ./bin/tests.js
+
+.PHONY: go-tests
+go-tests: *_test.go
+	@echo Running Go tests...
+	@go test -v .
+
+.PHONY: tests
+tests: js-tests go-test
 
 # Like site, but without site-data/data; typechecking sometimes
 # manually lifted.

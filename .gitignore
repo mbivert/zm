@@ -8,6 +8,7 @@ nohup.out
 backend
 db.sqlite
 db-dev.sqlite
+db-test.sqlite
 db-prod.sqlite
 user-prod.sqlite
 schema-dbjs.sql

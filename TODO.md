@@ -16,22 +16,14 @@ Current goals:
   feels good enough, let's try it for real
     - login failure when Data.File doesn't exist
   	- Currently working on a first draft; main features remaining:
-  		-> data edition is mostly done (UI ~works, route is missing)
+  		- data edition is mostly done (UI ~works, route is missing)
     - verification tests in auth
-    	-> depends as to whether we keep signin/signout in auth
+    	- depends as to whether we keep signin/signout in auth
     - trim http dep in auth: use json-rpc
-    	-> eventually for later
+    	- eventually for later
     - tests from JS
     - RPC.call() error display
     - verification url, submission & auto-login
-    - form & fields management. In particular, we'll soon
-      need to be able to edit zm preferences & account details
-      (email, name, etc.)
-      	-> For now this is coarsly handled. We may want to have
-      	something smarter, which e.g. builds an object from fields
-      	located somewhere below a <form>, where the fields are
-      	identified by e.g. having extra "get/set/check" registered
-      	methods (heck, we could even use a class)
 
 Major user features (~expected order):
   - @backend

@@ -7,6 +7,9 @@
 --
 -- Also, the Resource won't be of much use JS-side, so this should be
 -- realistic enough.
+
+-- NOTE: this is essentially obsolete but for bin/mklicense.js and
+-- bin/check-data.js.
 SELECT
 	Data.Id, Data.Name, Data.Type, Data.Descr, Data.Fmt, Data.FmtParams,
 	Data.File, Data.UrlInfo,

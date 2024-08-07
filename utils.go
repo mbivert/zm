@@ -63,11 +63,11 @@ func fails(w http.ResponseWriter, err error) {
 func getJSONBody[Tin any](w http.ResponseWriter, r *http.Request, in *Tin) error {
 	r.Body = http.MaxBytesReader(w, r.Body, 1048576)
 
-	err := json.NewDecoder(r.Body).Decode(&in)
+	err := json.NewDecoder(r.Body).Decode(in)
 	if err != nil {
 		err = fmt.Errorf("JSON decoding failure: %s", err)
 	}
-	return nil
+	return err
 }
 
 // Dump out to w as JSON.

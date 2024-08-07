@@ -126,8 +126,8 @@ type GetCaptchaIn struct {
 }
 
 type GetCaptchaOut struct {
-	Id     string
-	B64Img string
+	Id     string `json:"id"`
+	B64Img string `json:"b64img"`
 }
 
 func GetCaptcha(_ *DB, in *GetCaptchaIn, out *GetCaptchaOut) error {
@@ -142,12 +142,12 @@ func GetCaptcha(_ *DB, in *GetCaptchaIn, out *GetCaptchaOut) error {
 }
 
 type CheckCaptchaIn struct {
-	Id     string
-	Answer string
+	Id     string `json:"id"`
+	Answer string `json:"answer"`
 }
 
 type CheckCaptchaOut struct {
-	Match     bool
+	Match     bool `json:"match"`
 	GetCaptchaOut
 }
 
@@ -172,19 +172,20 @@ func CheckCaptcha(_ *DB, in *CheckCaptchaIn, out *CheckCaptchaOut) error {
 type SigninIn struct {
 	auth.SigninIn
 
-	CaptchaId     string
-	CaptchaAnswer string
+	CaptchaId     string // `json:"captchaid"`
+	CaptchaAnswer string // `json:"captchaanswer"`
 }
 
 type SigninOut struct {
 	auth.SigninOut
 
-	CaptchaMatch  bool
-	CaptchaId     string
-	CaptchaB64Img string
+	CaptchaMatch  bool   `json:"captchamatch"`
+	CaptchaId     string `json:"captchaid"`
+	CaptchaB64Img string `json:"captchab64img"`
 }
 
 func Signin(db *DB, in *SigninIn, out *SigninOut) error {
+	fmt.Println(in)
 	ccout := CheckCaptchaOut{}
 	err := CheckCaptcha(
 		db,

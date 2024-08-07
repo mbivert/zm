@@ -519,16 +519,16 @@ interface TreeDecomps {
  * fields from this file).
  */
 interface Data {
-	Descr      : string,
-	File       : string,
-	Fmt        : DataFmt,
-	FmtParams  : string,
-	Id         : number,
-	License    : string,
-	Name       : string,
-	Type       : DataType,
-	UrlInfo    : string,
-	UrlLicense : string,
+	descr      : string,
+	file       : string,
+	fmt        : DataFmt,
+	fmtparams  : string,
+	id         : number,
+	license    : string,
+	name       : string,
+	type       : DataType,
+	urlinfo    : string,
+	urllicense : string,
 }
 
 type Datas = Array<Data>;

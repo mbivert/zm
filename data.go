@@ -156,10 +156,10 @@ type DataGetMetasIn struct {
 // TODO: we may want to merge this with AboutData;
 // naming for sure will have to be unified.
 type Metas struct {
-	Type       DataType `json:"Type"`
-	Name       string   `json:"Name"`
-	Fmt        DataFmt  `json:"Fmt"`
-	File       string   `json:"File"`
+	Type       DataType `json:"type"`
+	Name       string   `json:"name"`
+	Fmt        DataFmt  `json:"fmt"`
+	File       string   `json:"file"`
 }
 
 type DataGetMetasOut struct {
@@ -204,24 +204,25 @@ type GetMyDataIn struct {
 // NOTE: we're getting close to './lib.d.ts:/^interface Data/',
 // but not there yet.
 type Data struct {
-	Id          int64
-	Name        string
+	Id          int64    `json:"id"`
+	Name        string   `json:"name"`
 
-	Type        DataType
-	Descr       string
+	Type        DataType `json:"type"`
+	Descr       string   `json:"descr"`
+
 	// .File is only used to fill content in GetMyData();
 	// we return it nevertheless.
-	File        string
-	Fmt         DataFmt
+	File        string   `json:"file"`
+	Fmt         DataFmt  `json:"fmt"`
 
-	UrlInfo     string
+	UrlInfo     string   `json:"urlinfo"`
 
-	Content     string
+	Content     string   `json:"content"`
 
-	Public      bool
+	Public      bool     `json:"public"`
 
-	LicenseId   int64
-	LicenseName string
+	LicenseId   int64    `json:"licenseid"`
+	LicenseName string   `json:"licensename"`
 }
 
 type GetMyDataOut struct {
@@ -259,8 +260,8 @@ func GetMyData(db *DB, in *GetMyDataIn, out *GetMyDataOut) (err error) {
 }
 
 type License struct {
-	Id    int64
-	Name  string
+	Id    int64   `json:"id"`
+	Name  string  `json:"name"`
 
 	// XXX We currently don't need those, but perhaps we
 	// should grab them too?

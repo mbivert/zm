@@ -15,6 +15,8 @@ import (
 	"os"
 	"fmt"
 	"log"
+	"errors"
+	"database/sql"
 	"github.com/mbivert/auth"
 	"github.com/mbivert/ftests"
 )
@@ -72,6 +74,57 @@ func loadTestSQL(path string) error {
 
 	_, err = db.Exec(string(x))
 	return err
+}
+
+// For tests purposes only
+func (db *DB) hasDataWithName(name string) (bool, error) {
+	db.Lock()
+	defer db.Unlock()
+
+	did := -1
+
+	err := db.QueryRow(`
+		SELECT Id FROM Data WHERE name = $1
+	`, name).Scan(&did)
+
+	// Should never happen in normal circumstances
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+// This is to test AddData, which eats a DataSetIn: the
+// fields we want to tests are essentially there too.
+func (db *DB) getDataByNameUid(name string, uid auth.UserId) (*DataSetIn, error) {
+	db.Lock()
+	defer db.Unlock()
+
+	var x DataSetIn
+
+	err := db.QueryRow(`
+		SELECT
+			Data.Name, Data.UserId, Data.Type, Data.Descr, Data.File,
+			Data.Fmt, Data.UrlInfo, Permission.Public, License.Id
+		FROM
+			Data, License, DataLicense, Permission
+		WHERE
+			DataLicense.DataId    = Data.Id
+		AND DataLicense.LicenseId = License.Id
+		AND Permission.DataId     = Data.Id
+		AND Data.Name             = $1
+		AND Data.UserId           = $2
+	`, name, uid).Scan(
+		&x.Name, &x.UserId, &x.Type, &x.Descr, &x.File,
+		&x.Fmt,  &x.UrlInfo, &x.Public, &x.LicenseId,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+	return &x, nil
 }
 
 func TestCanGet(t *testing.T) {
@@ -137,14 +190,14 @@ func TestAddData(t *testing.T) {
 
 	name := "superbuniquename"
 
-	mkd := func(uid auth.UserId, lid int64) *DataSetIn {
+	mkd := func(uid auth.UserId, lid int64, pub bool) *DataSetIn {
 		return &DataSetIn{
 			Token     : "x",
 			Name      : name,
 			Type      : "book",
 			Descr     : "foo",
 			Fmt       : "markdown",
-			Public    : false,
+			Public    : pub,
 			LicenseId : lid,
 			UrlInfo   : "x",
 			Content   : "foo",
@@ -160,25 +213,25 @@ func TestAddData(t *testing.T) {
 		{
 			"Foreign key constraint broke on unknown uid",
 			db.AddData,
-			[]any{mkd(89, 1)},
+			[]any{mkd(89, 1, false)},
 			[]any{fmt.Errorf("Unknown UserId")},
 		},
 		{
 			"Foreign key constraint broke on unknown license id",
 			db.AddData,
-			[]any{mkd(zmId, 1000)},
+			[]any{mkd(zmId, 1000, false)},
 			[]any{fmt.Errorf("Unknown LicenseId")},
 		},
 		{
-			"Make sure we have no dangling data from previous failure",
+			"No dangling data from previous failure",
 			db.hasDataWithName,
 			[]any{name},
 			[]any{false, nil},
 		},
 		{
-			"Can add random data with okay foreign keys",
+			"Random data with okay foreign keys",
 			db.AddData,
-			[]any{mkd(zmId, cc0Id)},
+			[]any{mkd(zmId, cc0Id, true)},
 			[]any{nil},
 		},
 		{
@@ -188,10 +241,48 @@ func TestAddData(t *testing.T) {
 			[]any{true, nil},
 		},
 		{
-			"Can add same Data name for different users",
+			"Data correctly added",
+			db.getDataByNameUid,
+			[]any{name, zmId},
+			[]any{&DataSetIn{
+				Token     : "", // not set
+				Name      : name,
+				Type      : "book",
+				Descr     : "foo",
+				Fmt       : "markdown",
+				Public    : true,
+				LicenseId : cc0Id,
+				UrlInfo   : "x",
+				Content   : "", // not set
+				File      : path,
+				UserId    : zmId,
+				Id        : 0, // not set
+			}, nil },
+		},
+		{
+			"Same Data name for different users",
 			db.AddData,
-			[]any{mkd(mbId, cc0Id)},
+			[]any{mkd(mbId, cc0Id, false)},
 			[]any{nil},
+		},
+		{
+			"Data correctly added (bis)",
+			db.getDataByNameUid,
+			[]any{name, mbId},
+			[]any{&DataSetIn{
+				Token     : "", // not set
+				Name      : name,
+				Type      : "book",
+				Descr     : "foo",
+				Fmt       : "markdown",
+				Public    : false,
+				LicenseId : cc0Id,
+				UrlInfo   : "x",
+				Content   : "", // not set
+				File      : path,
+				UserId    : mbId,
+				Id        : 0, // not set
+			}, nil },
 		},
 	})
 }

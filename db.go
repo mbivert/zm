@@ -89,26 +89,6 @@ func tryRollback(tx *sql.Tx, err error) error {
 	return err
 }
 
-// For tests purposes
-func (db *DB) hasDataWithName(name string) (bool, error) {
-	db.Lock()
-	defer db.Unlock()
-
-	did := -1
-
-	err := db.QueryRow(`
-		SELECT Id FROM Data WHERE name = $1
-	`, name).Scan(&did)
-
-	// Should never happen in normal circumstances
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, nil
-	} else if err != nil {
-		return false, err
-	}
-	return true, nil
-}
-
 // TODO: s/AddData/SetData/? (see how it mixes with edit maybe)
 func (db *DB) AddData(d *DataSetIn) error {
 	db.Lock()
@@ -347,7 +327,6 @@ func (db *DB) GetDataOf(uid auth.UserId) ([]Data, error) {
 		xs = append(xs, x)
 	}
 
-	fmt.Println(xs, rows.Err(), uid)
 	return xs, rows.Err()
 }
 

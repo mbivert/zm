@@ -20,6 +20,69 @@ First paragraph of each closed entry contains a closing statement.
 	    I'm not sure how much better it is from dchest in terms
 	    of efficiency, seems to be the same kind of generated captchas
 
+## medium/long @backend @database
+	2024-08-03: still a WIP too, decluttering TODO.md.
+	.
+	The backend isn't complete, but it's advanced enough to consider
+	(almost) closing this (tests and corresponding updates remains).
+	Later features to consider (split in existing @-entries):
+		- identification of books translations & storage
+		- meta-data,
+		- comments,
+		- etc.
+	.
+	No generic fs or perms module as we have for auth. Perhaps
+	later, but that's currently overkill for zm.
+
+		- schema.sql integration, ie.
+			- get rid of bin/mkdbjs.sh
+			- rework lib/db.js to actually perform RPCs
+				- we'll want to be able to perform public RPCs (to
+				keep the website working by default)
+				- and private ones
+		- schema2.sql review
+
+	The backend originally (in previous prototype that is)
+	was a dumb go server handling a few requests, mainly to
+	update pieces in a translated book.
+
+	We'll now need something a bit more exhaustive, with proper
+	SQL database to store users, books, with nice meta-data, and
+	allowing more complete operations.
+
+	There's already a early SQL scheme/DB budding in ./schema.sql,
+	that is compiled to JSON/JS (./modules/db.js).
+
+	Use Go as a backend language.
+
+	As for architecture, as we already have plenty of code/CPU
+	usage delegated to the frontend, we're likely to keep things
+	this way, and have a very dumb backend, whose role would mainly
+	be to provide a remote filesystem with permissions/groups.
+
+	As for databases, we're likely to use a sqlite database for
+	development/prototyping purposes, and switch to something
+	sturdier later on, if/when need be.
+		https://news.ycombinator.com/item?id=31318708
+		https://news.ycombinator.com/item?id=31364166
+			https://datastation.multiprocess.io/blog/2022-05-12-sqlite-in-go-with-and-without-cgo.html
+
+	It would be interesting to see if we could use the filesytem
+	to manage permissions, and e.g. keep the meta-datas in
+	SQL or in the FS. In a way, rewritting a permissions system
+	in a database that already come with a permission system (e.g.
+	MySQL's users & such), on an OS which already provides such
+	features too, seems quite redundant. We may have a performance
+	hit, but a ramfs should help take care of some of it.
+
+	For Go, see sqlc and
+		https://news.ycombinator.com/item?id=29351766
+		https://alanilling.medium.com/exiting-the-vietnam-of-programming-our-journey-in-dropping-the-orm-in-golang-3ce7dff24a0f
+
+	See also (alpine, django, htmx):
+		https://news.ycombinator.com/item?id=29319034
+		https://www.saaspegasus.com/guides/modern-javascript-for-django-developers/htmx-alpine/
+
 ## medium @data-organisation
 	2024-08-03: this is still a WIP, but to declutter TODO.md
 	Regarding file access, we want them to be cached by the browser
@@ -43,6 +106,8 @@ First paragraph of each closed entry contains a closing statement.
 	.
 	See also @cache-loaded-dicts: I thought caching (file downloading)
 	was an issue, but data file loading is also problematic.
+	.
+	Perms scheme has been kept simple but useful (public/private)
 
 	FTR:
 		http.HandleFunc("/data/get", func(w http.ResponseWriter, r *http.Request) {

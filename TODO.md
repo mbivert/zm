@@ -15,12 +15,9 @@ Current goals:
   - Working on @backend, @data-organisation; in particular, the (external) auth module
   feels good enough, let's try it for real
     - login failure when Data.File doesn't exist
+    	- all those should be fixed as we add tests
   	- Currently working on a first draft; main features remaining:
-  		- data edition is mostly done (UI ~works, route is missing)
-    - verification tests in auth
-    	- depends as to whether we keep signin/signout in auth
-    - trim http dep in auth: use json-rpc
-    	- eventually for later
+  		- data edition is mostly done (UI ~works, route/db query are missing)
     - tests from JS
     - RPC.call() error display
     - verification url, submission & auto-login
@@ -437,24 +434,6 @@ A few identified bugs. SQL database scheme prototype.
 	To be correlated with @backend.
 
 ## medium @data-organisation
-	Plan:
-		- Each Data (SQL table) entry has an owner (User SQL table).
-			DataUser "join" table
-
-		- Each Data has some permissions (Perm table)
-			DataPerm "join" table
-
-		- For now, let's keep the permissions simple: private|public;
-		we could add more sophisticated schemes later eventually, but
-		it should be enough for zm.
-
-		- Some keys are currently UNIQUE in Data (e.g. Data.Name); we
-		may want to lift those to allow different users to register
-		the potentially different data under the same name.
-
-		- All Data files are currently available as via a static
-		path (HTTP); no permission guards.
-
 	Operations:
 		- AddData()
 			- Use a single form for both AddBook() and AddDict();
@@ -892,22 +871,9 @@ A few identified bugs. SQL database scheme prototype.
 	Can we have a pict.csv for ancient forms?
 
 ## medium/long @backend @database
-	Update: for authentication / user management, we rely on
-		https://github.com/mbivert/auth
-
-	Two independent modules, orthogonals with auth, are planned:
-		- fs;
-		- perms;
-
+	(update)
 	Other backend features to consider:
 		- user preferences; 
-		- schema.sql integration, ie.
-			- get rid of bin/mkdbjs.sh
-			- rework lib/db.js to actually perform RPCs
-				- we'll want to be able to perform public RPCs (to
-				keep the website working by default)
-				- and private ones
-		- schema2.sql review
 		- currently, books aren't managed in data.js; we'll want
 		to see if there are any good reasons
 
@@ -921,47 +887,6 @@ A few identified bugs. SQL database scheme prototype.
 			we have to prepare for flexibility.
 
 	(end update)
-
-	The backend originally (in previous prototype that is)
-	was a dumb go server handling a few requests, mainly to
-	update pieces in a translated book.
-
-	We'll now need something a bit more exhaustive, with proper
-	SQL database to store users, books, with nice meta-data, and
-	allowing more complete operations.
-
-	There's already a early SQL scheme/DB budding in ./schema.sql,
-	that is compiled to JSON/JS (./modules/db.js).
-
-	Use Go as a backend language.
-
-	As for architecture, as we already have plenty of code/CPU
-	usage delegated to the frontend, we're likely to keep things
-	this way, and have a very dumb backend, whose role would mainly
-	be to provide a remote filesystem with permissions/groups.
-
-	As for databases, we're likely to use a sqlite database for
-	development/prototyping purposes, and switch to something
-	sturdier later on, if/when need be.
-		https://news.ycombinator.com/item?id=31318708
-		https://news.ycombinator.com/item?id=31364166
-			https://datastation.multiprocess.io/blog/2022-05-12-sqlite-in-go-with-and-without-cgo.html
-
-	It would be interesting to see if we could use the filesytem
-	to manage permissions, and e.g. keep the meta-datas in
-	SQL or in the FS. In a way, rewritting a permissions system
-	in a database that already come with a permission system (e.g.
-	MySQL's users & such), on an OS which already provides such
-	features too, seems quite redundant. We may have a performance
-	hit, but a ramfs should help take care of some of it.
-
-	For Go, see sqlc and
-		https://news.ycombinator.com/item?id=29351766
-		https://alanilling.medium.com/exiting-the-vietnam-of-programming-our-journey-in-dropping-the-orm-in-golang-3ce7dff24a0f
-
-	See also (alpine, django, htmx):
-		https://news.ycombinator.com/item?id=29319034
-		https://www.saaspegasus.com/guides/modern-javascript-for-django-developers/htmx-alpine/
 
 ## medium/long @commented-books
 	We'll need to grow this alongside @backend, @database, @data-organisation,

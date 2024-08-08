@@ -187,6 +187,12 @@ func TestAddData(t *testing.T) {
 			[]any{name},
 			[]any{true, nil},
 		},
+		{
+			"Can add same Data name for different users",
+			db.AddData,
+			[]any{mkd(mbId, cc0Id)},
+			[]any{nil},
+		},
 	})
 }
 

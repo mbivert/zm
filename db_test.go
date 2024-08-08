@@ -127,6 +127,11 @@ func (db *DB) getDataByNameUid(name string, uid auth.UserId) (*DataSetIn, error)
 	return &x, nil
 }
 
+func (db *DB) deleteAllBooks() error {
+	_, err := db.Exec("DELETE FROM Data WHERE Type = 'book'")
+	return err
+}
+
 func TestCanGet(t *testing.T) {
 	initTestDB()
 
@@ -287,3 +292,172 @@ func TestAddData(t *testing.T) {
 	})
 }
 
+// Edit x/^		{\n/+,/^		},?\n/- | qcol -k -n
+func mkDefaultBooks(pub bool) []Book {
+	return []Book {
+		{
+			Name:    "Shuowen Jiezi, book (Wikisource)",
+			Descr:   "WikiSource version of the ShuoWen JieZi",
+			File:    "data/books/shuo-wen-jie-zi.src",
+			UrlInfo: "https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97",
+			Owned:   pub,
+		},
+		{
+			Name:    "Bai Jia Xing",
+			Descr:   "Bai Xia Jing",
+			File:    "data/books/bai-jia-xing.src",
+			UrlInfo: "https://www.gutenberg.org/files/25196/25196-0.txt",
+			Owned:   pub,
+		},
+		{
+			Name:    "Qian Zi Wen",
+			Descr:   "Qian Zi Wen",
+			File:    "data/books/qian-zi-wen.src",
+			UrlInfo: "https://zh.wikisource.org/wiki/%E5%8D%83%E5%AD%97%E6%96%87",
+			Owned:   pub,
+		},
+		{
+			Name:    "三字經 (Three Character Classic)",
+			Descr:   "Three Character Classic, original",
+			File:    "data/books/san-zi-jing.src",
+			UrlInfo: "https://ctext.org/three-character-classic",
+			Owned:   pub,
+		},
+		{
+			Name:    "Art of war (partial)",
+			Descr:   "Sun-Tzu s Art of war",
+			File:    "data/books/art-of-war.src",
+			UrlInfo: "https://ctext.org/art-of-war/",
+			Owned:   pub,
+		},
+		{
+			Name:    "Three Character Classic (translation)",
+			Descr:   "Three Character Classic translated by Herbert Giles",
+			File:    "data/books/san-zi-jing.tr",
+			UrlInfo: "https://ctext.org/three-character-classic",
+			Owned:   pub,
+		},
+		{
+			Name:    "Art of war (translation)",
+			Descr:   "Sun-Tzu s Art of war",
+			File:    "data/books/art-of-war.tr",
+			UrlInfo: "https://ctext.org/art-of-war/",
+			Owned:   pub,
+		},
+		{
+			Name:    "Le Classique des Trois Caractères",
+			Descr:   "Le Classique des Trois Caractères, traduit par Deverge",
+			File:    "data/books/san-zi-jing-fr.tr",
+			UrlInfo: "http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing\u0026s=1\u0026lang=fr",
+			Owned:   pub,
+		},
+		{
+			Name:    "Father Serge, Tolstoï (Отец Сергий, Толстой) (partial)",
+			Descr:   "First few paragraphs from Tolstoï s Father Serge, in Russian",
+			File:    "data/books/father-serge-tolstoi.src",
+			UrlInfo: "https://en.wikisource.org/wiki/Father_Sergius",
+			Owned:   pub,
+		},
+	}
+}
+
+func TestGetBooks(t *testing.T) {
+	initTestDB()
+
+	path := "private/data/path"
+
+	name := "superbuniquename"
+
+	mkd := func(uid auth.UserId, lid int64, pub bool) *DataSetIn {
+		return &DataSetIn{
+			Token     : "x",
+			Name      : name,
+			Type      : "book",
+			Descr     : "foo",
+			Fmt       : "markdown",
+			Public    : pub,
+			LicenseId : lid,
+			UrlInfo   : "x",
+			Content   : "foo",
+			File      : path,
+			UserId    : uid,
+			Id        : -1,
+		}
+	}
+
+	book := mkd(zmId, cc0Id, false)
+	book1 := mkd(mbId, cc0Id, true)
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Default books",
+			db.GetBooks,
+			[]any{zmId},
+			[]any{mkDefaultBooks(true), nil},
+		},
+		{
+			"Add a private book",
+			db.AddData,
+			[]any{book},
+			[]any{nil},
+		},
+	})
+
+	books := append(mkDefaultBooks(true), Book{
+		Name:    book.Name,
+		Descr:   book.Descr,
+		File:    book.File,
+		UrlInfo: book.UrlInfo,
+		Owned:   true,
+	})
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Default books + one privately owned",
+			db.GetBooks,
+			[]any{zmId},
+			[]any{books, nil},
+		},
+		{
+			"Default books + one privately not owned",
+			db.GetBooks,
+			[]any{mbId},
+			[]any{mkDefaultBooks(false), nil},
+		},
+		{
+			"Add a private book",
+			db.AddData,
+			[]any{book1},
+			[]any{nil},
+		},
+	})
+
+	books1 := append(books, Book{
+		Name:    book1.Name,
+		Descr:   book1.Descr,
+		File:    book1.File,
+		UrlInfo: book1.UrlInfo,
+		Owned:   false,
+	})
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Default books + one privately owned + a public one",
+			db.GetBooks,
+			[]any{zmId},
+			[]any{books1, nil},
+		},
+		{
+			"Removing all books",
+			db.deleteAllBooks,
+			[]any{},
+			[]any{nil},
+		},
+		{
+			"No books is not an error",
+			db.GetBooks,
+			[]any{zmId},
+			[]any{[]Book{}, nil},
+		},
+	})
+}

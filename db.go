@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"github.com/mattn/go-sqlite3"
+	"testing"
 
 	"github.com/mbivert/auth"
 )
@@ -163,6 +164,12 @@ func (db *DB) GetBooks(uid auth.UserId) ([]Book, error) {
 	db.Lock()
 	defer db.Unlock()
 
+	// XXX clumsy, but other options aren't much better anyway.
+	orderby := ""
+	if testing.Testing() {
+		orderby = "ORDER BY Data.Id"
+	}
+
 	rows, err := db.Query(`
 		SELECT
 			Name, Descr, File, UrlInfo, UserId
@@ -171,29 +178,29 @@ func (db *DB) GetBooks(uid auth.UserId) ([]Book, error) {
 		WHERE
 			Data.Id = Permission.DataId
 		AND Data.Type = 'book'
-		AND (Data.UserId = $1 OR Permission.Public >= 1)
-	`, uid)
+		AND (Data.UserId = $1 OR Permission.Public == 1)
+	`+orderby, uid)
+
+	// NOTE: sql.ErrNoRows seems to only arises after a .Scan():
+	// it's useless to check for it here.
 	if err != nil {
 		return nil, err
 	}
-	// Should never happen in normal circumstances
-	if errors.Is(err, sql.ErrNoRows) {
-		return []Book{}, nil
-	}
+
 	defer rows.Close()
 
-	var bs []Book
+	xs := []Book{}
 
 	for rows.Next() {
-		var b Book
+		var x Book
 		var owner auth.UserId
-		if err := rows.Scan(&b.Name, &b.Descr, &b.File, &b.UrlInfo, &owner); err != nil {
+		if err := rows.Scan(&x.Name, &x.Descr, &x.File, &x.UrlInfo, &owner); err != nil {
 			return nil, err
 		}
-		b.Owned = owner == uid
-		bs = append(bs, b)
+		x.Owned = owner == uid
+		xs = append(xs, x)
 	}
-	return bs, rows.Err()
+	return xs, rows.Err()
 }
 
 // This is to build about: we want to retrieve all (public) data
@@ -215,17 +222,13 @@ func (db *DB) GetAbouts() ([]AboutData, error) {
 		AND DataLicense.LicenseId = License.Id
 		AND Data.UserId           = 1
 	`)
-	// Should never happen in normal circumstances
-	if errors.Is(err, sql.ErrNoRows) {
-		return []AboutData{}, nil
-	}
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	var xs []AboutData
+	xs := []AboutData{}
 
 	for rows.Next() {
 		var x AboutData
@@ -265,9 +268,6 @@ func (db *DB) GetMetas(ms []string) ([]Metas, error) {
 		WHERE
 			Name in (`+strings.Join(ys, ", ")+`)
 	`, zs...)
-	if errors.Is(err, sql.ErrNoRows) {
-		return []Metas{}, nil
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -303,11 +303,6 @@ func (db *DB) GetDataOf(uid auth.UserId) ([]Data, error) {
 		AND Permission.DataId     = Data.Id
 		AND Data.UserId           = $1
 	`, uid)
-
-	// Assume no data, but it could be because the uid is rotten
-	if errors.Is(err, sql.ErrNoRows) {
-		return []Data{}, nil
-	}
 	if err != nil {
 		return nil, err
 	}
@@ -340,13 +335,11 @@ func (db *DB) GetLicenses() ([]License, error) {
 		FROM
 			License
 	`)
+
 	if err != nil {
 		return nil, err
 	}
-	// Should never happen in normal circumstances
-	if errors.Is(err, sql.ErrNoRows) {
-		return []License{}, nil
-	}
+
 	defer rows.Close()
 
 	var xs []License

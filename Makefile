@@ -162,16 +162,16 @@ ${ZM_DATA}/LICENSE.md: ./site/base/full.js
 	@echo Creating $@...
 	@sh ./bin/mkenumsjs.sh ./lib.d.ts > $@
 
-./db-dev.sqlite: ./schema.sql ./user-dev.sql
+./db-dev.sqlite: ./schema.sql ./schema-user-dev.sql ./schema-values.sql
 	@echo Creating $@...
 	@rm -rf $@
 	@cat $^ | sqlite3 $@
 
-./schema-dbjs.sql: ./schema.sql ./user-dev.sql ./dbjs.sql
+./db-json-export.sql: ./schema.sql ./schema-user-dev.sql ./schema-values.sql ./schema-json-export.sql
 	@echo Creating $@...
 	@cat $^ > $@
 
-./lib/db.js: ./schema-dbjs.sql ./bin/mkdbjs.sh
+./lib/db.js: ./db-json-export.sql ./bin/mkdbjs.sh
 	@echo Creating $@...
 	@sh ./bin/mkdbjs.sh $< > $@
 

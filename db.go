@@ -7,7 +7,7 @@ import (
 	"sync"
 	"strconv"
 	"strings"
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/mattn/go-sqlite3"
 
 	"github.com/mbivert/auth"
 )
@@ -69,6 +69,46 @@ func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 	return public >= 1 || owner == uid, nil
 }
 
+// This is clumsy: https://github.com/mattn/go-sqlite3/issues/949
+func isErrConstraintFk(err error) bool {
+	err2, ok := (err).(sqlite3.Error)
+	if ok {
+		if err2.Code == sqlite3.ErrConstraint {
+			if err2.ExtendedCode == sqlite3.ErrConstraintForeignKey {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func tryRollback(tx *sql.Tx, err error) error {
+	if err2 := tx.Rollback(); err2 != nil {
+		err = fmt.Errorf("%s, additionally, rollback failed: %s\n", err, err2)
+	}
+	return err
+}
+
+// For tests purposes
+func (db *DB) hasDataWithName(name string) (bool, error) {
+	db.Lock()
+	defer db.Unlock()
+
+	did := -1
+
+	err := db.QueryRow(`
+		SELECT Id FROM Data WHERE name = $1
+	`, name).Scan(&did)
+
+	// Should never happen in normal circumstances
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	} else if err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 // TODO: s/AddData/SetData/? (see how it mixes with edit maybe)
 func (db *DB) AddData(d *DataSetIn) error {
 	db.Lock()
@@ -76,7 +116,12 @@ func (db *DB) AddData(d *DataSetIn) error {
 
 	var did int64
 
-	err := db.QueryRow(`
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	err = tx.QueryRow(`
 		INSERT INTO
 			Data (
 				Name, UserId, Type, Descr, File, Formatter,
@@ -89,7 +134,10 @@ func (db *DB) AddData(d *DataSetIn) error {
 			d.Fmt, "", d.UrlInfo).Scan(&did)
 
 	if err != nil {
-		return err
+		if isErrConstraintFk(err) {
+			err = fmt.Errorf("Unknown UserId")
+		}
+		return tryRollback(tx, err)
 	}
 
 	// NOTE: d.Id is a recent field addition, not sure if
@@ -102,22 +150,30 @@ func (db *DB) AddData(d *DataSetIn) error {
 	}
 
 	// NOTE: _.LastInsertId() is a thing for some DB
-	_, err = db.Exec(`
+	_, err = tx.Exec(`
 		INSERT INTO
 			Permission (DataId, Public)
 		VALUES
 			($1, $2)
 	`, did, pub)
 	if err != nil {
-		return nil
+		return tryRollback(tx, err)
 	}
 
-	_, err = db.Exec(`
+	_, err = tx.Exec(`
 		INSERT INTO
 			DataLicense (DataId, LicenseId)
 		VALUES
 			($1, $2)
 	`, did, d.LicenseId)
+	if err != nil {
+		if isErrConstraintFk(err) {
+			err = fmt.Errorf("Unknown LicenseId")
+		}
+		return tryRollback(tx, err)
+	} else {
+		err = tx.Commit()
+	}
 
 	return err
 }

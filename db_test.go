@@ -3,6 +3,10 @@ package main
 /*
  * NOTE: tests for db-user.go can be found in ../auth/db-sqlite_test.go;
  * we're here, for now, focusing on testing data access.
+ *
+ * NOTE: Regarding errors, in particular broken FOREIGN KEYS constraint,
+ * we can't build a sqlite3.Error correctly here, because its err field
+ * is unexported.
  */
 
 import (
@@ -13,8 +17,6 @@ import (
 	"log"
 	"github.com/mbivert/auth"
 	"github.com/mbivert/ftests"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 var db *DB
@@ -46,7 +48,11 @@ func initTestDB() {
 		log.Fatal(err)
 	}
 
-	if err := loadTestSQL("user-dev.sql"); err != nil {
+	if err := loadTestSQL("schema-user-dev.sql"); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := loadTestSQL("schema-values.sql"); err != nil {
 		log.Fatal(err)
 	}
 
@@ -68,6 +74,8 @@ func loadTestSQL(path string) error {
 func TestCanGet(t *testing.T) {
 	initTestDB()
 
+	path := "private/data/path"
+
 	x := DataSetIn{
 		Token     : "x",
 		Name      : "foo",
@@ -78,11 +86,13 @@ func TestCanGet(t *testing.T) {
 		LicenseId : 1,
 		UrlInfo   : "x",
 		Content   : "foo",
-		File      : "private/data/path",
+		File      : path,
 		UserId    : zmId,
 		Id        : -1,
 	}
 
+	// TODO: test the path starting with a / or not, to be done
+	// while testing data.go.
 	ftests.Run(t, []ftests.Test{
 		{
 			"Public files available to read for zm",
@@ -105,14 +115,63 @@ func TestCanGet(t *testing.T) {
 		{
 			"Can't get private paths for mb",
 			db.CanGet,
-			[]any{mbId, "private/data/path"},
+			[]any{mbId, path},
 			[]any{false, nil},
 		},
 		{
 			"Can get private paths for zm",
 			db.CanGet,
-			[]any{zmId, "private/data/path"},
+			[]any{zmId, path},
 			[]any{true, nil},
 		},
 	})
 }
+
+func TestAddData(t *testing.T) {
+	initTestDB()
+
+	path := "private/data/path"
+
+	name := "superbuniquename"
+
+	mkd := func(uid auth.UserId, lid int64) *DataSetIn {
+		return &DataSetIn{
+			Token     : "x",
+			Name      : name,
+			Type      : "book",
+			Descr     : "foo",
+			Fmt       : "markdown",
+			Public    : false,
+			LicenseId : lid,
+			UrlInfo   : "x",
+			Content   : "foo",
+			File      : path,
+			UserId    : uid,
+			Id        : -1,
+		}
+	}
+
+	// TODO: test the path starting with a / or not, to be done
+	// while testing data.go.
+	ftests.Run(t, []ftests.Test{
+		{
+			"Foreign key constraint broke on unknown uid",
+			db.AddData,
+			[]any{mkd(89, 1)},
+			[]any{fmt.Errorf("Unknown UserId")},
+		},
+		{
+			"Foreign key constraint broke on unknown license id",
+			db.AddData,
+			[]any{mkd(zmId, 1000)},
+			[]any{fmt.Errorf("Unknown LicenseId")},
+		},
+		{
+			"Make sure we have no dangling data from previous failure",
+			db.hasDataWithName,
+			[]any{name},
+			[]any{false, nil},
+		},
+	})
+}
+

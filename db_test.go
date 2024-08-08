@@ -30,6 +30,7 @@ var now int64
 var zmId = auth.UserId(1)
 var mbId = auth.UserId(2)
 var ccCEDictPath = "data/dict/cc-cedict.csv.gz"
+var cc0Id = int64(1) // CC0 1.0 license (~public domain)
 
 // Individual tests rely on a ~fresh DB; `init()` cannot be
 // called directly.
@@ -39,6 +40,9 @@ func initTestDB() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	// multiStatements=true required for the rough
+	// SQL injection performed by loadTestSQL()
 	db, err = NewDB(dbfn+"?multiStatements=true")
 	if err != nil {
 		log.Fatal(err)
@@ -59,8 +63,7 @@ func initTestDB() {
 	now = time.Now().Unix()
 }
 
-// Bare SQL injections; requires the multiStatements=true
-// in the connection string.
+// Bare SQL injections
 func loadTestSQL(path string) error {
 	x, err := os.ReadFile(path)
 	if err != nil {
@@ -171,6 +174,18 @@ func TestAddData(t *testing.T) {
 			db.hasDataWithName,
 			[]any{name},
 			[]any{false, nil},
+		},
+		{
+			"Can add random data with okay foreign keys",
+			db.AddData,
+			[]any{mkd(zmId, cc0Id)},
+			[]any{nil},
+		},
+		{
+			"Data seems to have been registered in Data",
+			db.hasDataWithName,
+			[]any{name},
+			[]any{true, nil},
 		},
 	})
 }

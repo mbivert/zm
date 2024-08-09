@@ -8,11 +8,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/mbivert/auth"
 )
 
 type Config struct {
-	Version string `json:"version"`
-	Root    string `json:"root"`
+	Version string      `json:"version"`
+	Root    string      `json:"root"`
+
+	// SQL Id of the zhongmu user, owner of various
+	// "public" files.
+	ZmId    auth.UserId `json:"zmid"`
 }
 
 func loadConf(fn string, conf *Config) error {
@@ -23,6 +29,10 @@ func loadConf(fn string, conf *Config) error {
 
 	if err := json.Unmarshal(xs, conf); err != nil {
 		return fmt.Errorf("Error while parsing '%s': %s", fn, err)
+	}
+
+	if conf.ZmId == 0 {
+		conf.ZmId = 1
 	}
 	return nil
 }

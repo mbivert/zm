@@ -7,6 +7,11 @@ package main
  * NOTE: Regarding errors, in particular broken FOREIGN KEYS constraint,
  * we can't build a sqlite3.Error correctly here, because its err field
  * is unexported.
+ *
+ * NOTE: we're, for now, using schema*.sql as test data. It's a bit clumsy
+ * as there's already lots of data there, so perhaps we should work on
+ * a subset. In particular, data reloading is a bit slow already, and "must"
+ * be performed for each Test*()
  */
 
 import (
@@ -129,6 +134,11 @@ func (db *DB) getDataByNameUid(name string, uid auth.UserId) (*DataSetIn, error)
 
 func (db *DB) deleteAllBooks() error {
 	_, err := db.Exec("DELETE FROM Data WHERE Type = 'book'")
+	return err
+}
+
+func (db *DB) deleteAllData() error {
+	_, err := db.Exec("DELETE FROM Data")
 	return err
 }
 
@@ -458,6 +468,255 @@ func TestGetBooks(t *testing.T) {
 			db.GetBooks,
 			[]any{zmId},
 			[]any{[]Book{}, nil},
+		},
+	})
+}
+
+// Edit x/^	{\n/+,/^	},?\n/- | qcol -k -n
+var allAbouts = []About{
+	{
+		Type:       "dict",
+		Name:       "CC-CEDICT",
+		UrlInfo:    "https://cc-cedict.org/wiki/",
+		License:    "CC BY-SA 4.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/4.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "ZM-add",
+		UrlInfo:    "https://zhongmu.eu/",
+		License:    "CC BY-SA 4.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/4.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "CC-CEDICT-singles",
+		UrlInfo:    "https://zhongmu.eu/",
+		License:    "CC BY-SA 4.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/4.0/",
+	},
+	{
+		Type:       "decomp",
+		Name:       "CHISE-ids",
+		UrlInfo:    "http://chise.org",
+		License:    "GPLv2",
+		UrlLicense: "https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html",
+	},
+	{
+		Type:       "dict",
+		Name:       "ZM-pict",
+		UrlInfo:    "https://zhongmu.eu/",
+		License:    "CC BY-SA 4.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/4.0/",
+	},
+	{
+		Type:       "decomp",
+		Name:       "WM-decomp",
+		UrlInfo:    "https://commons.wikimedia.org/wiki/Commons:Chinese_characters_decomposition",
+		License:    "CC BY-SA 3.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/3.0/",
+	},
+	{
+		Type:       "big5",
+		Name:       "Unicode-BIG5",
+		UrlInfo:    "https://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/BIG5.TXT",
+		License:    "Unicode ToS",
+		UrlLicense: "https://www.unicode.org/copyright.html",
+	},
+	{
+		Type:       "book",
+		Name:       "Shuowen Jiezi, book (Wikisource)",
+		UrlInfo:    "https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "WS-shuowen",
+		UrlInfo:    "https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "CFDICT",
+		UrlInfo:    "https://chine.in/mandarin/dictionnaire/CFDICT/",
+		License:    "CC BY-SA 4.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/4.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "HanDeDict",
+		UrlInfo:    "https://handedict.zydeo.net/",
+		License:    "CC BY-SA 2.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/2.0/",
+	},
+	{
+		Type:       "book",
+		Name:       "Bai Jia Xing",
+		UrlInfo:    "https://www.gutenberg.org/files/25196/25196-0.txt",
+		License:    "Gutenberg license",
+		UrlLicense: "http://gutenberg.org/license",
+	},
+	{
+		Type:       "book",
+		Name:       "Qian Zi Wen",
+		UrlInfo:    "https://zh.wikisource.org/wiki/%E5%8D%83%E5%AD%97%E6%96%87",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "book",
+		Name:       "三字經 (Three Character Classic)",
+		UrlInfo:    "https://ctext.org/three-character-classic",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "OpenRussian",
+		UrlInfo:    "https://en.openrussian.org/",
+		License:    "CC BY-SA 4.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/4.0/",
+	},
+	{
+		Type:       "decomp",
+		Name:       "ZM-decomp",
+		UrlInfo:    "https://zhongmu.eu/",
+		License:    "CC BY-SA 3.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/3.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "CFDICT-singles",
+		UrlInfo:    "https://zhongmu.eu/",
+		License:    "CC BY-SA 4.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/4.0/",
+	},
+	{
+		Type:       "dict",
+		Name:       "HanDeDict-singles",
+		UrlInfo:    "https://zhongmu.eu/",
+		License:    "CC BY-SA 2.0",
+		UrlLicense: "https://creativecommons.org/licenses/by-sa/2.0/",
+	},
+	{
+		Type:       "book",
+		Name:       "Art of war (partial)",
+		UrlInfo:    "https://ctext.org/art-of-war/",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "book",
+		Name:       "Three Character Classic (translation)",
+		UrlInfo:    "https://ctext.org/three-character-classic",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "pieces",
+		Name:       "Three Character Classic (pieces)",
+		UrlInfo:    "https://ctext.org/three-character-classic",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "book",
+		Name:       "Art of war (translation)",
+		UrlInfo:    "https://ctext.org/art-of-war/",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "pieces",
+		Name:       "Art of war (pieces)",
+		UrlInfo:    "https://ctext.org/art-of-war/",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "book",
+		Name:       "Le Classique des Trois Caractères",
+		UrlInfo:    "http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing\u0026s=1\u0026lang=fr",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "pieces",
+		Name:       "Le Classique des Trois Caractères (pieces)",
+		UrlInfo:    "http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing\u0026s=1\u0026lang=fr",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+	{
+		Type:       "book",
+		Name:       "Father Serge, Tolstoï (Отец Сергий, Толстой) (partial)",
+		UrlInfo:    "https://en.wikisource.org/wiki/Father_Sergius",
+		License:    "CC0 1.0",
+		UrlLicense: "https://creativecommons.org/publicdomain/zero/1.0/",
+	},
+}
+
+func TestGetAbouts(t *testing.T) {
+	initTestDB()
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Default data",
+			db.GetAbouts,
+			[]any{zmId},
+			[]any{allAbouts, nil},
+		},
+		{
+			"Removing all data",
+			db.deleteAllData,
+			[]any{},
+			[]any{nil},
+		},
+		{
+			"No data is not an error",
+			db.GetAbouts,
+			[]any{zmId},
+			[]any{[]About{}, nil},
+		},
+	})
+}
+
+func TestGetMetas(t *testing.T) {
+	initTestDB()
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Try to fetch metas for nothing",
+			db.GetMetas,
+			[]any{zmId, []string{}},
+			[]any{[]Metas{}, nil},
+		},
+		{
+			"Metas for a single public (and owned) book",
+			db.GetMetas,
+			[]any{zmId, []string{"Shuowen Jiezi, book (Wikisource)"}},
+			[]any{[]Metas{
+				{
+					Type: "book",
+					Name: "Shuowen Jiezi, book (Wikisource)",
+					Fmt:  "markdown",
+					File: "data/books/shuo-wen-jie-zi.src",
+				},
+			}, nil},
+		},
+		{
+			"Removing all data",
+			db.deleteAllData,
+			[]any{},
+			[]any{nil},
+		},
+		{
+			"No data is not an error",
+			db.GetMetas,
+			[]any{zmId, []string{}},
+			[]any{[]Metas{}, nil},
 		},
 	})
 }

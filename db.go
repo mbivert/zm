@@ -1,5 +1,17 @@
 package main
 
+/*
+ * NOTE: I'm often using $n (e.g. $1, $2, $3) as placeholders
+ * for variables here, but the correct SQLite syntax would be
+ * ?NNN (e.g. ?1, ?2, ?3).
+ *
+ * This is because we may switch to PostgreSQL later on, that'd
+ * be one less thing to change.
+ *
+ * However it must be then noted that $1, $2, etc. ARE NOT positional
+ * parameters, but merely equivalent to a simple generic ?
+ */
+
 import (
 	"database/sql"
 	"errors"
@@ -67,6 +79,7 @@ func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 		return false, err
 	}
 
+	// XXX/TODO Why aren't we doing this in SQL already?
 	return public >= 1 || owner == uid, nil
 }
 
@@ -207,11 +220,16 @@ func (db *DB) GetBooks(uid auth.UserId) ([]Book, error) {
 // for user zhongmu: this is the main data used to make the site
 // work, that for which we usually have Resources, will have
 // automatic updates, etc.
-func (db *DB) GetAbouts() ([]AboutData, error) {
+func (db *DB) GetAbouts(zmid auth.UserId) ([]About, error) {
 	db.Lock()
 	defer db.Unlock()
 
-	// XXX/TODO: hardcoding zhongmu's UserId
+	// XXX clumsy, but other options aren't much better anyway.
+	orderby := ""
+	if testing.Testing() {
+		orderby = "ORDER BY Data.Id"
+	}
+
 	rows, err := db.Query(`
 		SELECT
 			Data.Type, Data.Name, Data.UrlInfo, License.Name, License.URL
@@ -220,18 +238,18 @@ func (db *DB) GetAbouts() ([]AboutData, error) {
 		WHERE
 			DataLicense.DataId    = Data.Id
 		AND DataLicense.LicenseId = License.Id
-		AND Data.UserId           = 1
-	`)
+		AND Data.UserId           = $1
+	`+orderby, zmid)
 	if err != nil {
 		return nil, err
 	}
 
 	defer rows.Close()
 
-	xs := []AboutData{}
+	xs := []About{}
 
 	for rows.Next() {
-		var x AboutData
+		var x About
 		if err := rows.Scan(&x.Type, &x.Name, &x.UrlInfo, &x.License, &x.UrlLicense); err != nil {
 			return nil, err
 		}
@@ -240,33 +258,38 @@ func (db *DB) GetAbouts() ([]AboutData, error) {
 	return xs, rows.Err()
 }
 
-func (db *DB) GetMetas(ms []string) ([]Metas, error) {
+func (db *DB) GetMetas(uid auth.UserId, ms []string) ([]Metas, error) {
 	db.Lock()
 	defer db.Unlock()
 
-	// XXX/TODO: when testing, see if the SQL is solid enough
-	// for not to be guarded as such.
-	if len(ms) == 0 {
-		return []Metas{}, nil
-	}
+	// NOTE: All this works fine with an empty ms
 
-	// ys is to create a list of $1, $2, etc.
+	// ys is to create a list of $2, $3, etc.
 	// zs is because db.Query() requires an []any
 	ys := make([]string, len(ms))
-	zs := make([]any, len(ms))
+	zs := make([]any, 1+len(ms))
+	zs[0] = uid
 	for i, v := range ms {
-		ys[i] = "$"+strconv.Itoa(i+1)
-		zs[i] = v
+		ys[i] = "$"+strconv.Itoa(i+2)
+		zs[i+1] = v
 	}
 
-	// XXX/TODO: hardcoding zhongmu's UserId
+	// NOTE: again, mind the fact that our $1, $2, etc.
+	// are, as far as SQLite is concerned, equivalent to
+	// generic ?, so the order we use our variables
+	// matters.
 	rows, err := db.Query(`
 		SELECT
 			Type, Name, Fmt, File
 		FROM
-			Data
+			Data, Permission
 		WHERE
-			Name in (`+strings.Join(ys, ", ")+`)
+			Permission.DataId = Data.Id
+		AND (
+			   Permission.Public = 1
+			OR (?1 > 0 AND Data.UserId = ?1)
+		)
+		AND Name in (`+strings.Join(ys, ", ")+`)
 	`, zs...)
 	if err != nil {
 		return nil, err
@@ -274,7 +297,7 @@ func (db *DB) GetMetas(ms []string) ([]Metas, error) {
 
 	defer rows.Close()
 
-	var xs []Metas
+	xs := []Metas{}
 
 	for rows.Next() {
 		var x Metas
@@ -309,7 +332,7 @@ func (db *DB) GetDataOf(uid auth.UserId) ([]Data, error) {
 
 	defer rows.Close()
 
-	var xs []Data
+	xs := []Data{}
 
 	for rows.Next() {
 		var x Data
@@ -342,7 +365,7 @@ func (db *DB) GetLicenses() ([]License, error) {
 
 	defer rows.Close()
 
-	var xs []License
+	xs := []License{}
 
 	for rows.Next() {
 		var x License

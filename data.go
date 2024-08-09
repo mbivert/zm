@@ -135,7 +135,7 @@ func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
 	return err
 }
 
-type AboutData struct {
+type About struct {
 	Type       DataType `json:"type"`
 	Name       string   `json:"name"`
 	UrlInfo    string   `json:"urlinfo"`
@@ -147,19 +147,21 @@ type DataGetAboutIn struct {
 }
 
 type DataGetAboutOut struct {
-	Datas []AboutData `json:"datas"`
+	Datas []About `json:"datas"`
 }
 
 func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) (err error) {
-	out.Datas, err = db.GetAbouts()
+	// TODO: add the configuration to our context as well
+	out.Datas, err = db.GetAbouts(C.ZmId)
 	return err
 }
 
 type DataGetMetasIn struct {
+	Token string   `json:"token"`
 	Names []string `json:"names"`
 }
 
-// TODO: we may want to merge this with AboutData;
+// TODO: we may want to merge this with About;
 // naming for sure will have to be unified.
 type Metas struct {
 	Type       DataType `json:"type"`
@@ -172,8 +174,20 @@ type DataGetMetasOut struct {
 	Metas []Metas `json:"metas"`
 }
 
+// NOTE: the meta datas are computed from user preferences: they
+// are used to download the files which will be needed for inspection.
+// This should work for anonymous users as well; when authenticated, in
+// addition to public files, we'll want to also be able to access owned files.
 func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) (err error) {
-	out.Metas, err = db.GetMetas(in.Names)
+	ok, uid, err := auth.IsValidToken(in.Token)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		uid = -1
+	}
+
+	out.Metas, err = db.GetMetas(uid, in.Names)
 	return err
 }
 

@@ -380,6 +380,8 @@ A few identified bugs. SQL database scheme prototype.
 	Feature that could be useful to researchers: have the ability to
 	to look for uses of a word/expression in context.
 
+	https://www.sqlite.org/fts5.html
+
 ## medium @dict-parsing-error @parsing-error @patching-error
 	We now properly returns errors from parsers/patchers as we're
 	about to let users actually manage their own files.

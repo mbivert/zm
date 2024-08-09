@@ -274,6 +274,12 @@ func (db *DB) GetMetas(uid auth.UserId, ms []string) ([]Metas, error) {
 		zs[i+1] = v
 	}
 
+	// XXX clumsy, but other options aren't much better anyway.
+	orderby := ""
+	if testing.Testing() {
+		orderby = "ORDER BY Data.Id"
+	}
+
 	// NOTE: again, mind the fact that our $1, $2, etc.
 	// are, as far as SQLite is concerned, equivalent to
 	// generic ?, so the order we use our variables
@@ -290,7 +296,7 @@ func (db *DB) GetMetas(uid auth.UserId, ms []string) ([]Metas, error) {
 			OR (?1 > 0 AND Data.UserId = ?1)
 		)
 		AND Name in (`+strings.Join(ys, ", ")+`)
-	`, zs...)
+	`+orderby, zs...)
 	if err != nil {
 		return nil, err
 	}

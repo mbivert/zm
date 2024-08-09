@@ -11,7 +11,8 @@ package main
  * NOTE: we're, for now, using schema*.sql as test data. It's a bit clumsy
  * as there's already lots of data there, so perhaps we should work on
  * a subset. In particular, data reloading is a bit slow already, and "must"
- * be performed for each Test*()
+ * be performed for each Test*(). Perhaps copying a .sqlite file would be
+ * faster than running the SQL.
  */
 
 import (
@@ -686,6 +687,29 @@ func TestGetAbouts(t *testing.T) {
 func TestGetMetas(t *testing.T) {
 	initTestDB()
 
+	path := "private/data/path"
+
+	name := "superbuniquename"
+
+	mkd := func(uid auth.UserId, lid int64, pub bool) *DataSetIn {
+		return &DataSetIn{
+			Token     : "x",
+			Name      : name,
+			Type      : "book",
+			Descr     : "foo",
+			Fmt       : "markdown",
+			Public    : pub,
+			LicenseId : lid,
+			UrlInfo   : "x",
+			Content   : "foo",
+			File      : path,
+			UserId    : uid,
+			Id        : -1,
+		}
+	}
+
+	book := mkd(zmId, cc0Id, false)
+
 	ftests.Run(t, []ftests.Test{
 		{
 			"Try to fetch metas for nothing",
@@ -703,6 +727,82 @@ func TestGetMetas(t *testing.T) {
 					Name: "Shuowen Jiezi, book (Wikisource)",
 					Fmt:  "markdown",
 					File: "data/books/shuo-wen-jie-zi.src",
+				},
+			}, nil},
+		},
+		{
+			"Metas for a single public (not owned) book",
+			db.GetMetas,
+			[]any{mbId, []string{"Shuowen Jiezi, book (Wikisource)"}},
+			[]any{[]Metas{
+				{
+					Type: "book",
+					Name: "Shuowen Jiezi, book (Wikisource)",
+					Fmt:  "markdown",
+					File: "data/books/shuo-wen-jie-zi.src",
+				},
+			}, nil},
+		},
+		{
+			"Metas for a single public book, anonymous access",
+			db.GetMetas,
+			[]any{auth.UserId(-1), []string{"Shuowen Jiezi, book (Wikisource)"}},
+			[]any{[]Metas{
+				{
+					Type: "book",
+					Name: "Shuowen Jiezi, book (Wikisource)",
+					Fmt:  "markdown",
+					File: "data/books/shuo-wen-jie-zi.src",
+				},
+			}, nil},
+		},
+		{
+			"Add a private book",
+			db.AddData,
+			[]any{book},
+			[]any{nil},
+		},
+		{
+			"Private, owned book is available",
+			db.GetMetas,
+			[]any{zmId, []string{name}},
+			[]any{[]Metas{
+				{
+					Type: "book",
+					Name: name,
+					Fmt:  "markdown",
+					File: path,
+				},
+			}, nil},
+		},
+		{
+			"Private, not owned book is unavailable",
+			db.GetMetas,
+			[]any{mbId, []string{name}},
+			[]any{[]Metas{}, nil},
+		},
+		{
+			"Private book unavailable via anonymous access",
+			db.GetMetas,
+			[]any{auth.UserId(-1), []string{name}},
+			[]any{[]Metas{}, nil},
+		},
+		{
+			"Querying multiple books",
+			db.GetMetas,
+			[]any{zmId, []string{name, "Shuowen Jiezi, book (Wikisource)"}},
+			[]any{[]Metas{
+				{
+					Type: "book",
+					Name: "Shuowen Jiezi, book (Wikisource)",
+					Fmt:  "markdown",
+					File: "data/books/shuo-wen-jie-zi.src",
+				},
+				{
+					Type: "book",
+					Name: name,
+					Fmt:  "markdown",
+					File: path,
 				},
 			}, nil},
 		},

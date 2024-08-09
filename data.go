@@ -47,7 +47,6 @@ type DataSetIn struct {
 
 	Public    bool     `json:"public"`
 
-	// XXX/TODO: yell if LicenseId is incorrect
 	LicenseId int64    `json:"licenseid"`
 
 	// XXX We at least would want to check that

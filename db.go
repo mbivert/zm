@@ -315,9 +315,16 @@ func (db *DB) GetMetas(uid auth.UserId, ms []string) ([]Metas, error) {
 	return xs, rows.Err()
 }
 
+// TODO: eventually, rename? GetOwnedBy()
 func (db *DB) GetDataOf(uid auth.UserId) ([]Data, error) {
 	db.Lock()
 	defer db.Unlock()
+
+	// XXX clumsy, but other options aren't much better anyway.
+	orderby := ""
+	if testing.Testing() {
+		orderby = "ORDER BY Data.Id"
+	}
 
 	rows, err := db.Query(`
 		SELECT
@@ -331,7 +338,7 @@ func (db *DB) GetDataOf(uid auth.UserId) ([]Data, error) {
 		AND DataLicense.LicenseId = License.Id
 		AND Permission.DataId     = Data.Id
 		AND Data.UserId           = $1
-	`, uid)
+	`+orderby, uid)
 	if err != nil {
 		return nil, err
 	}
@@ -358,12 +365,18 @@ func (db *DB) GetLicenses() ([]License, error) {
 	db.Lock()
 	defer db.Unlock()
 
+	// XXX clumsy, but other options aren't much better anyway.
+	orderby := ""
+	if testing.Testing() {
+		orderby = "ORDER BY Id"
+	}
+
 	rows, err := db.Query(`
 		SELECT
 			Id, Name
 		FROM
 			License
-	`)
+	`+orderby)
 
 	if err != nil {
 		return nil, err

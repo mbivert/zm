@@ -143,6 +143,11 @@ func (db *DB) deleteAllData() error {
 	return err
 }
 
+func (db *DB) deleteAllLicenses() error {
+	_, err := db.Exec("DELETE FROM License")
+	return err
+}
+
 func TestCanGet(t *testing.T) {
 	initTestDB()
 
@@ -817,6 +822,64 @@ func TestGetMetas(t *testing.T) {
 			db.GetMetas,
 			[]any{zmId, []string{}},
 			[]any{[]Metas{}, nil},
+		},
+	})
+}
+
+// Edit x/^	{\n/+,/^	},?\n/- | qcol -k -n
+var defaultLicenses = []License{
+	{
+		Id:   1,
+		Name: "CC0 1.0",
+	},
+	{
+		Id:   2,
+		Name: "CC BY-SA 3.0",
+	},
+	{
+		Id:   3,
+		Name: "CC BY-SA 4.0",
+	},
+	{
+		Id:   4,
+		Name: "Unicode ToS",
+	},
+	{
+		Id:   5,
+		Name: "GPLv2",
+	},
+	{
+		Id:   6,
+		Name: "CC BY-SA 2.0",
+	},
+	{
+		Id:   7,
+		Name: "CC BY-NC-SA 3.0",
+	},
+	{
+		Id:   8,
+		Name: "Unlicense",
+	},
+	{
+		Id:   9,
+		Name: "Gutenberg license",
+	},
+}
+
+func TestGetLicenses(t *testing.T) {
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Removing all licenses",
+			db.deleteAllLicenses,
+			[]any{},
+			[]any{nil},
+		},
+		{
+			"No licenses is not an error",
+			db.GetLicenses,
+			[]any{},
+			[]any{[]License{}, nil},
 		},
 	})
 }

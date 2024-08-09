@@ -96,6 +96,18 @@ func isErrConstraintFk(err error) bool {
 	return false
 }
 
+func isErrConstraintUniq(err error) bool {
+	err2, ok := (err).(sqlite3.Error)
+	if ok {
+		if err2.Code == sqlite3.ErrConstraint {
+			if err2.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func tryRollback(tx *sql.Tx, err error) error {
 	if err2 := tx.Rollback(); err2 != nil {
 		err = fmt.Errorf("%s, additionally, rollback failed: %s\n", err, err2)
@@ -130,6 +142,9 @@ func (db *DB) AddData(d *DataSetIn) error {
 	if err != nil {
 		if isErrConstraintFk(err) {
 			err = fmt.Errorf("Unknown UserId")
+		}
+		if isErrConstraintUniq(err) {
+			err = fmt.Errorf("Path '%s' already there or there's a '%s' named '%s'", d.File, d.Type, d.Name)
 		}
 		return tryRollback(tx, err)
 	}

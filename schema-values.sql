@@ -179,7 +179,7 @@ VALUES
 	(
 		18, 1, 'HanDeDict-singles', 'dict', 'Single-character HanDeDict entries only registered as simplified',
 		'cc-cedict', '{eol:"\n",cols:[0]}',
-		'data/dict/cc-cedict-singles.csv.gz', 'cat',
+		'data/dict/handedict-singles.csv.gz', 'cat',
 		'https://zhongmu.eu/'
 	),
 	(

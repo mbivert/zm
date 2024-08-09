@@ -39,6 +39,7 @@ var zmId = auth.UserId(1)
 var mbId = auth.UserId(2)
 var ccCEDictPath = "data/dict/cc-cedict.csv.gz"
 var cc0Id = int64(1) // CC0 1.0 license (~public domain)
+var cc0Name = "CC0 1.0"
 
 // Individual tests rely on a ~fresh DB; `init()` cannot be
 // called directly.
@@ -208,10 +209,13 @@ func TestAddData(t *testing.T) {
 	initTestDB()
 
 	path := "private/data/path"
+	path1 := "somewhere/else"
+	path2 := "secret/location"
 
 	name := "superbuniquename"
+//	name1 := "ooook"
 
-	mkd := func(uid auth.UserId, lid int64, pub bool) *DataSetIn {
+	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *DataSetIn {
 		return &DataSetIn{
 			Token     : "x",
 			Name      : name,
@@ -234,13 +238,13 @@ func TestAddData(t *testing.T) {
 		{
 			"Foreign key constraint broke on unknown uid",
 			db.AddData,
-			[]any{mkd(89, 1, false)},
+			[]any{mkd(name, path, 89, 1, false)},
 			[]any{fmt.Errorf("Unknown UserId")},
 		},
 		{
 			"Foreign key constraint broke on unknown license id",
 			db.AddData,
-			[]any{mkd(zmId, 1000, false)},
+			[]any{mkd(name, path, zmId, 1000, false)},
 			[]any{fmt.Errorf("Unknown LicenseId")},
 		},
 		{
@@ -252,7 +256,7 @@ func TestAddData(t *testing.T) {
 		{
 			"Random data with okay foreign keys",
 			db.AddData,
-			[]any{mkd(zmId, cc0Id, true)},
+			[]any{mkd(name, path, zmId, cc0Id, true)},
 			[]any{nil},
 		},
 		{
@@ -281,10 +285,26 @@ func TestAddData(t *testing.T) {
 			}, nil },
 		},
 		{
-			"Same Data name for different users",
+			"Can't add the same path twice in the DB",
 			db.AddData,
-			[]any{mkd(mbId, cc0Id, false)},
+			[]any{mkd(name, path, mbId, cc0Id, false)},
+			[]any{
+				fmt.Errorf("Path '%s' already there or there's a 'book' named '%s'", path, name),
+			},
+		},
+		{
+			"But with a different path, ok to have the same name",
+			db.AddData,
+			[]any{mkd(name, path1, mbId, cc0Id, false)},
 			[]any{nil},
+		},
+		{
+			"But can't have the same (Name, UserId) even with different pathes",
+			db.AddData,
+			[]any{mkd(name, path2, zmId, cc0Id, true)},
+			[]any{
+				fmt.Errorf("Path '%s' already there or there's a 'book' named '%s'", path2, name),
+			},
 		},
 		{
 			"Data correctly added (bis)",
@@ -300,7 +320,7 @@ func TestAddData(t *testing.T) {
 				LicenseId : cc0Id,
 				UrlInfo   : "x",
 				Content   : "", // not set
-				File      : path,
+				File      : path1,
 				UserId    : mbId,
 				Id        : 0, // not set
 			}, nil },
@@ -381,10 +401,11 @@ func TestGetBooks(t *testing.T) {
 	initTestDB()
 
 	path := "private/data/path"
+	path1 := "else/where"
 
 	name := "superbuniquename"
 
-	mkd := func(uid auth.UserId, lid int64, pub bool) *DataSetIn {
+	mkd := func(path string, uid auth.UserId, lid int64, pub bool) *DataSetIn {
 		return &DataSetIn{
 			Token     : "x",
 			Name      : name,
@@ -401,8 +422,8 @@ func TestGetBooks(t *testing.T) {
 		}
 	}
 
-	book := mkd(zmId, cc0Id, false)
-	book1 := mkd(mbId, cc0Id, true)
+	book := mkd(path, zmId, cc0Id, false)
+	book1 := mkd(path1, mbId, cc0Id, true)
 
 	ftests.Run(t, []ftests.Test{
 		{
@@ -826,6 +847,129 @@ func TestGetMetas(t *testing.T) {
 	})
 }
 
+func TestGetDataOf(t *testing.T) {
+
+	path := "private/data/path"
+	path1 := "bl/bl"
+
+	name := "superbuniquename"
+	name1 := "oook"
+
+	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *DataSetIn {
+		return &DataSetIn{
+			Token     : "x",
+			Name      : name,
+			Type      : "book",
+			Descr     : "foo",
+			Fmt       : "markdown",
+			Public    : pub,
+			LicenseId : lid,
+			UrlInfo   : "x",
+			Content   : "foo",
+			File      : path,
+			UserId    : uid,
+			Id        : -1,
+		}
+	}
+
+	book := mkd(name, path, mbId, cc0Id, false)
+	book1 := mkd(name1, path1, mbId, cc0Id, true)
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Add a private book to mb",
+			db.AddData,
+			[]any{book},
+			[]any{nil},
+		},
+	})
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Private book correctly listed",
+			db.GetDataOf,
+			[]any{mbId},
+			[]any{[]Data{
+				{
+					Id          : book.Id,
+					Name        : name,
+					Type        : "book",
+					Descr       : "foo",
+					File        : path,
+					Fmt         : "markdown",
+					UrlInfo     : "x",
+					Public      : false,
+					LicenseId   : cc0Id,
+					LicenseName : cc0Name,
+				},
+			}, nil},
+		},
+		{
+			"Data can't be owned by anonymous users",
+			db.GetDataOf,
+			[]any{auth.UserId(-1)},
+			[]any{[]Data{}, nil},
+		},
+		{
+			"Add a public book to mb",
+			db.AddData,
+			[]any{book1},
+			[]any{nil},
+		},
+	})
+	ftests.Run(t, []ftests.Test{
+		{
+			"Both books are correctly listed",
+			db.GetDataOf,
+			[]any{mbId},
+			[]any{[]Data{
+				{
+					Id          : book.Id,
+					Name        : book.Name,
+					Type        : "book",
+					Descr       : "foo",
+					File        : path,
+					Fmt         : "markdown",
+					UrlInfo     : "x",
+					Public      : false,
+					LicenseId   : cc0Id,
+					LicenseName : cc0Name,
+				},
+				{
+					Id          : book1.Id,
+					Name        : book1.Name,
+					Type        : "book",
+					Descr       : "foo",
+					File        : path1,
+					Fmt         : "markdown",
+					UrlInfo     : "x",
+					Public      : true,
+					LicenseId   : cc0Id,
+					LicenseName : cc0Name,
+				},
+			}, nil},
+		},
+		{
+			"Data can't be owned by anonymous users (bis)",
+			db.GetDataOf,
+			[]any{auth.UserId(-1)},
+			[]any{[]Data{}, nil},
+		},
+		{
+			"Removing all data",
+			db.deleteAllData,
+			[]any{},
+			[]any{nil},
+		},
+		{
+			"No data is not an error",
+			db.GetDataOf,
+			[]any{zmId},
+			[]any{[]Data{}, nil},
+		},
+	})
+}
+
 // Edit x/^	{\n/+,/^	},?\n/- | qcol -k -n
 var defaultLicenses = []License{
 	{
@@ -867,7 +1011,6 @@ var defaultLicenses = []License{
 }
 
 func TestGetLicenses(t *testing.T) {
-
 	ftests.Run(t, []ftests.Test{
 		{
 			"Removing all licenses",

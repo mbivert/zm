@@ -115,7 +115,7 @@ CREATE TABLE Data (
 	Descr     TEXT,
 
 	-- Path to formatted Resource.File
-	File       TEXT,
+	File       TEXT UNIQUE,
 
 	-- Command used to create .File from Resource.File
 	Formatter   TEXT,

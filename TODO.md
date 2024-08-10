@@ -15,17 +15,8 @@ Current goals:
   - Working on @backend, @data-organisation; in particular, the (external) auth module
   feels good enough, let's try it for real
   	- Go tests: for data.go
-  		- we want to add the context thingy before writing the tests.
-  		It should contain:
-  		  - the DB
-  		  - a way to keep track sizes of data/$id directories
-  		  - the current user id when relevant
-  		  - the root global variable
-  		  - the configuration
   		- we also want to unify fields names
   		(e.g. UrlLicense vs. LicenseId, Data.UrlInfo -> URL, etc.).
-  		- again for data.go, we'd also want to remove the Token parameter
-  		and provide it systematically via a cookie: this requires a
   		corresponding update in ../auth/
     - login failure when Data.File doesn't exist
     	- all those should be fixed as we add tests

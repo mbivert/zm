@@ -100,7 +100,7 @@ go-tests: *_test.go
 	@go test -v .
 
 .PHONY: tests
-tests: js-tests go-test
+tests: js-tests go-tests
 
 # Like site, but without site-data/data; typechecking sometimes
 # manually lifted.

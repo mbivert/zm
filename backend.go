@@ -219,6 +219,7 @@ func main() {
 	// TODO: this should be in the Config
 	fn   := "db-dev.sqlite"
 
+	// TODO: pointer or not?
 	db, err := NewDB(fn)
 	if err != nil {
 		log.Fatal(err)
@@ -235,7 +236,7 @@ func main() {
 	//
 	// TODO: if we were using the same mux, this should panic(): test
 	// and eventually document it
-	http.HandleFunc("/auth/signin", wrap[DB, SigninIn, SigninOut](db, Signin))
+	http.HandleFunc("/auth/signin", auth.Wrap[*DB, SigninIn, SigninOut](db, Signin))
 
 	// TODO: data edition field
 	// TODO: s,/data/set,/set/data & do it for all
@@ -245,14 +246,14 @@ func main() {
 	// TODO: add an extra CLI parameter --dev or so, and make it so that
 	// the getCaptcha route returns the answer alongside it, so that we
 	// can test things in the front.
-	http.HandleFunc("POST /data/set", wrap[DB, DataSetIn, DataSetOut](db, DataSet))
+	http.HandleFunc("POST /data/set", auth.Wrap[*DB, DataSetIn, DataSetOut](db, DataSet))
 	http.HandleFunc(
 		"POST /data/get/books",
-		wrap[DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
+		auth.Wrap[*DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
 	)
 	http.HandleFunc(
 		"POST /data/get/about",
-		wrap[DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
+		auth.Wrap[*DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
 	)
 
 	captcha = base64Captcha.NewCaptcha(
@@ -260,22 +261,22 @@ func main() {
 		base64Captcha.DefaultMemStore,
 	)
 
-	http.HandleFunc("/captcha/get", wrap[DB, GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
-	http.HandleFunc("/captcha/check", wrap[DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
+	http.HandleFunc("/captcha/get", auth.Wrap[*DB, GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
+	http.HandleFunc("/captcha/check", auth.Wrap[*DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
 
 	http.HandleFunc(
 		"POST /data/get/metas",
-		wrap[DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
+		auth.Wrap[*DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
 	)
 
 	http.HandleFunc(
 		"/get/my/data",
-		wrap[DB, GetMyDataIn, GetMyDataOut](db, GetMyData),
+		auth.Wrap[*DB, GetMyDataIn, GetMyDataOut](db, GetMyData),
 	)
 
 	http.HandleFunc(
 		"/get/licenses",
-		wrap[DB, GetLicensesIn, GetLicensesOut](db, GetLicenses),
+		auth.Wrap[*DB, GetLicensesIn, GetLicensesOut](db, GetLicenses),
 	)
 
 	http.HandleFunc("GET /data/",  func(w http.ResponseWriter, r *http.Request) {

@@ -75,7 +75,7 @@ type DataSetOut struct {
 // most other such functions (e.g. ctx.CanWrite(uid, xs))
 func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 	fmt.Println(in, in.LicenseId)
-	ok, uid, err := auth.IsValidToken(in.Token)
+	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ type DataGetBooksOut struct {
 }
 
 func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
-	ok, uid, err := auth.IsValidToken(in.Token)
+	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
 		return err
 	}
@@ -178,7 +178,7 @@ type DataGetMetasOut struct {
 // This should work for anonymous users as well; when authenticated, in
 // addition to public files, we'll want to also be able to access owned files.
 func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) (err error) {
-	ok, uid, err := auth.IsValidToken(in.Token)
+	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
 		return err
 	}
@@ -195,10 +195,19 @@ func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) (err error) 
 // For more, see 'DONE.md:/^## medium @data-organisation/'
 func GETData(db *DB, root string, w http.ResponseWriter, r *http.Request) {
 	var ok bool
+	var uid auth.UserId
 
-	uid, err := getTokenCookie(w, r)
+	tok, err := auth.GetCookie(w, r)
 	if err != nil {
 		goto Err
+	}
+	ok, uid, err = auth.CheckToken(tok)
+	if err != nil {
+		goto Err
+	}
+	// e.g. token expired
+	if !ok {
+		uid = -1
 	}
 
 	ok, err = db.CanGet(uid, r.URL.Path)
@@ -262,7 +271,7 @@ func loadContents(ds []Data) (error) {
 }
 
 func GetMyData(db *DB, in *GetMyDataIn, out *GetMyDataOut) (err error) {
-	ok, uid, err := auth.IsValidToken(in.Token)
+	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
 		return err
 	}

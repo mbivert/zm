@@ -94,8 +94,14 @@ js-tests: typecheck ./bin/tests.js ./lib/enums.js
 	@echo Running JS tests...
 	@node ./bin/tests.js
 
+# TODO: this is broken because we use stuff from db_test.go in data_test.go
+.PHONY: go-data-tests
+go-data-tests: data_test.go ${GOFILES}
+	@echo Running Go tests...
+	@go test -v data_test.go ${GOFILES}
+
 .PHONY: go-tests
-go-tests: *_test.go
+go-tests: *_test.go ${GOFILES}
 	@echo Running Go tests...
 	@go test -v .
 

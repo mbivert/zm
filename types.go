@@ -140,7 +140,7 @@ type License struct {
  * Data (data.go)
  */
 
-type DataSetIn struct {
+type SetDataIn struct {
 	Token     string   `json:"token"`
 	Name      string   `json:"name"`
 	Type      DataType `json:"type"`
@@ -164,12 +164,13 @@ type DataSetIn struct {
 	File      string
 	UserId    auth.UserId
 
-	// NOTE/TODO: this is for now only used for db tests,
-	// but might come handy for data edition.
+	// Convention used in 'data.go:/^func SetData\(':
+	//	- if set to -1 're adding a new entry
+	//	- otherwise, we're updating an existing entry.
 	Id        int64
 }
 
-type DataSetOut struct {
+type SetDataOut struct {
 }
 
 type DataGetBooksIn struct {

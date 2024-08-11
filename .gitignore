@@ -13,3 +13,4 @@ db-prod.sqlite
 db-json.sql
 schema-user-prod.sqlite
 db-json-export.sql
+.tests/*

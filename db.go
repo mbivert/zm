@@ -10,6 +10,9 @@ package main
  *
  * However it must be then noted that $1, $2, etc. ARE NOT positional
  * parameters, but merely equivalent to a simple generic ?
+ *
+ * NOTE: AddData/UpdateData are in charge of writing .Content to .File
+ * to help reverting changes in case of errors.
  */
 
 import (
@@ -115,12 +118,86 @@ func tryRollback(tx *sql.Tx, err error) error {
 	return err
 }
 
-// TODO: s/AddData/SetData/? (see how it mixes with edit maybe)
-func (db *DB) AddData(d *DataSetIn) error {
+// NOTE: perhaps we could merge UpdateData() with AddData(),
+// but I'm not sure it'd make things clearer.
+func (db *DB) UpdateData(d *SetDataIn) error {
 	db.Lock()
 	defer db.Unlock()
 
-	var did int64
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// NOTE: we're returning the File field so as to
+	// recycle the path.
+	err = tx.QueryRow(`
+		UPDATE
+			Data
+		SET
+			Name      = $1,
+			Type      = $2,
+			Descr     = $3,
+			Formatter = $4,
+			Fmt       = $5,
+			FmtParams = $6,
+			UrlInfo   = $7
+		WHERE
+			UserId    = $8
+		AND Id        = $9
+		RETURNING
+			File`,
+		d.Name, d.Type, d.Descr, "cat",
+		d.Fmt, "", d.UrlInfo, d.UserId, d.Id,
+	).Scan(&d.File)
+	if err != nil {
+		if isErrConstraintFk(err) {
+			err = fmt.Errorf("Unknown UserId")
+		}
+		if isErrConstraintUniq(err) {
+			err = fmt.Errorf("Seems there's already something named '%s'", d.Name)
+		}
+		return tryRollback(tx, err)
+	}
+
+	// NOTE: _.LastInsertId() is a thing for some DB
+	_, err = tx.Exec(`
+		UPDATE
+			Permission
+		SET
+			Public = $1
+		WHERE
+			DataId = $2
+	`, d.Public, d.Id)
+	if err != nil {
+		return tryRollback(tx, err)
+	}
+
+	_, err = tx.Exec(`
+		UPDATE
+			DataLicense
+		SET
+			LicenseId = $1
+		WHERE
+			DataId    = $2
+	`, d.LicenseId, d.Id)
+	if err != nil {
+		if isErrConstraintFk(err) {
+			err = fmt.Errorf("Unknown LicenseId")
+		}
+		return tryRollback(tx, err)
+	}
+
+	if writeDataFile(d.File, d.Content); err != nil {
+		return tryRollback(tx, err)
+	}
+
+	return tx.Commit()
+}
+
+func (db *DB) AddData(d *SetDataIn) error {
+	db.Lock()
+	defer db.Unlock()
 
 	tx, err := db.Begin()
 	if err != nil {
@@ -137,21 +214,18 @@ func (db *DB) AddData(d *DataSetIn) error {
 		RETURNING Id`,
 			d.Name, d.UserId, d.Type,
 			d.Descr, d.File, "cat",
-			d.Fmt, "", d.UrlInfo).Scan(&did)
+			d.Fmt, "", d.UrlInfo).Scan(&d.Id)
 
 	if err != nil {
 		if isErrConstraintFk(err) {
 			err = fmt.Errorf("Unknown UserId")
 		}
 		if isErrConstraintUniq(err) {
+			// XXX no, it's not necessarily a d.Type
 			err = fmt.Errorf("Path '%s' already there or there's a '%s' named '%s'", d.File, d.Type, d.Name)
 		}
 		return tryRollback(tx, err)
 	}
-
-	// NOTE: d.Id is a recent field addition, not sure if
-	// it's going to last yet, hence we keep the var did
-	d.Id = did
 
 	pub := 0
 	if d.Public {
@@ -164,7 +238,7 @@ func (db *DB) AddData(d *DataSetIn) error {
 			Permission (DataId, Public)
 		VALUES
 			($1, $2)
-	`, did, pub)
+	`, d.Id, pub)
 	if err != nil {
 		return tryRollback(tx, err)
 	}
@@ -174,17 +248,20 @@ func (db *DB) AddData(d *DataSetIn) error {
 			DataLicense (DataId, LicenseId)
 		VALUES
 			($1, $2)
-	`, did, d.LicenseId)
+	`, d.Id, d.LicenseId)
 	if err != nil {
 		if isErrConstraintFk(err) {
 			err = fmt.Errorf("Unknown LicenseId")
 		}
 		return tryRollback(tx, err)
-	} else {
-		err = tx.Commit()
 	}
 
-	return err
+	// TODO: untested
+	if writeDataFile(d.File, d.Content); err != nil {
+		return tryRollback(tx, err)
+	}
+
+	return tx.Commit()
 }
 
 // Grab all books, publics or owned by said user

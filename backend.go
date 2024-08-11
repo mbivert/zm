@@ -196,26 +196,27 @@ func main() {
 		log.Fatal(err)
 	}
 
-	http.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
+	mux := initData(db)
+
+	mux.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
 
 	// XXX Overide auth.Signin to add captcha checks; should
 	// be temporary.
 	//
 	// TODO: if we were using the same mux, this should panic(): test
 	// and eventually document it
-	http.HandleFunc("/auth/signin", auth.Wrap[*DB, SigninIn, SigninOut](db, Signin))
+	mux.HandleFunc("/auth/signin", auth.Wrap[*DB, SigninIn, SigninOut](db, Signin))
 
 	captcha = base64Captcha.NewCaptcha(
 		base64Captcha.NewDriverDigit(100, 240, 4, 0.7, 80),
 		base64Captcha.DefaultMemStore,
 	)
 
-	http.HandleFunc("/captcha/get", auth.Wrap[*DB, GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
-	http.HandleFunc("/captcha/check", auth.Wrap[*DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
+	mux.HandleFunc("/captcha/get", auth.Wrap[*DB, GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
+	mux.HandleFunc("/captcha/check", auth.Wrap[*DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
 
-	initData(db)
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)
 		log.Println("Request to "+path)
 		if path == "/" {
@@ -281,6 +282,6 @@ func main() {
 		}
 	} else {
 		log.Println("Listening on "+port)
-		log.Fatal(http.ListenAndServe(port, nil))
+		log.Fatal(http.ListenAndServe(port, mux))
 	}
 }

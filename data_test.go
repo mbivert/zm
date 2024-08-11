@@ -39,9 +39,8 @@ func init() {
 func initDataTest() {
 	initTestDB() // see 'db_test.go:/^func initTestDB\('
 
-	handler = http.DefaultServeMux
-
-	initData(db)
+//	handler = http.DefaultServeMux
+	handler = initData(db)
 
 	if err := auth.LoadConf("config.auth.json"); err != nil {
 		log.Fatal(err)
@@ -142,6 +141,21 @@ func mustParseJSON(s string) any {
 		log.Fatal(err)
 	}
 	return x
+}
+
+func TestSetData(t *testing.T) {
+	initDataTest()
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Invalid input",
+			callURL,
+			[]any{handler, "/set/data", "", ""},
+			[]any{map[string]any{
+				"err": "JSON decoding failure: json: cannot unmarshal string into Go value of type main.SetDataIn",
+			}},
+		},
+	})
 }
 
 func TestDataGetLicenses(t *testing.T) {

@@ -50,6 +50,16 @@ func initTestDB() {
 		log.Fatal(err)
 	}
 
+	// writeDataFile() will write all files under
+	// dir (HTTP root). In particular durin tests,
+	// our DB functions are now in charge of writing
+	// content to data file for easier reverts in case
+	// of issues.
+	//
+	// That's to say, all temporary test files associated
+	// to the Data.File field will be stored here.
+	dir = "./.tests/"
+
 	// multiStatements=true required for the rough
 	// SQL injection performed by loadTestSQL()
 	db, err = NewDB(dbfn+"?multiStatements=true")
@@ -103,13 +113,13 @@ func (db *DB) hasDataWithName(name string) (bool, error) {
 	return true, nil
 }
 
-// This is to test AddData, which eats a DataSetIn: the
+// This is to test AddData, which eats a SetDataIn: the
 // fields we want to tests are essentially there too.
-func (db *DB) getDataByNameUid(name string, uid auth.UserId) (*DataSetIn, error) {
+func (db *DB) getDataByNameUid(name string, uid auth.UserId) (*SetDataIn, error) {
 	db.Lock()
 	defer db.Unlock()
 
-	var x DataSetIn
+	var x SetDataIn
 
 	err := db.QueryRow(`
 		SELECT
@@ -154,7 +164,7 @@ func TestCanGet(t *testing.T) {
 
 	path := "private/data/path"
 
-	x := DataSetIn{
+	x := SetDataIn{
 		Token     : "x",
 		Name      : "foo",
 		Type      : "book",
@@ -205,6 +215,101 @@ func TestCanGet(t *testing.T) {
 	})
 }
 
+func TestUpdateData(t *testing.T) {
+	initTestDB()
+
+	path := "private/data/path"
+	name := "superbuniquename"
+
+
+	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
+		return &SetDataIn{
+			Token     : "x",
+			Name      : name,
+			Type      : "book",
+			Descr     : "foo",
+			Fmt       : "markdown",
+			Public    : pub,
+			LicenseId : lid,
+			UrlInfo   : "x",
+			Content   : "foo",
+			File      : path,
+			UserId    : uid,
+			Id        : -1,
+		}
+	}
+
+	data := mkd(name, path, zmId, cc0Id, true)
+
+	// TODO: test the path starting with a / or not, to be done
+	// while testing data.go.
+	ftests.Run(t, []ftests.Test{
+		{
+			"Random data with okay foreign keys",
+			db.AddData,
+			[]any{data},
+			[]any{nil},
+		},
+		{
+			"Data seems to have been registered in Data",
+			db.hasDataWithName,
+			[]any{name},
+			[]any{true, nil},
+		},
+		{
+			"Data correctly added",
+			db.getDataByNameUid,
+			[]any{name, zmId},
+			[]any{&SetDataIn{
+				Token     : "", // not set
+				Name      : name,
+				Type      : "book",
+				Descr     : "foo",
+				Fmt       : "markdown",
+				Public    : true,
+				LicenseId : cc0Id,
+				UrlInfo   : "x",
+				Content   : "", // not set
+				File      : path,
+				UserId    : zmId,
+				Id        : 0, // not set
+			}, nil },
+		},
+	})
+
+	data.Name  = "changed name"
+	data.LicenseId = -42
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Try updating with invalid license ID",
+			db.UpdateData,
+			[]any{data},
+			[]any{fmt.Errorf("Unknown LicenseId")},
+		},
+		{
+			"Name update reverted after failed license update",
+			db.getDataByNameUid,
+			[]any{name, zmId},
+			[]any{&SetDataIn{
+				Token     : "", // not set
+				Name      : name,
+				Type      : "book",
+				Descr     : "foo",
+				Fmt       : "markdown",
+				Public    : true,
+				LicenseId : cc0Id,
+				UrlInfo   : "x",
+				Content   : "", // not set
+				File      : path,
+				UserId    : zmId,
+				Id        : 0, // not set
+			}, nil },
+		},
+	})
+//	os.Exit(0)
+}
+
 func TestAddData(t *testing.T) {
 	initTestDB()
 
@@ -215,8 +320,8 @@ func TestAddData(t *testing.T) {
 	name := "superbuniquename"
 //	name1 := "ooook"
 
-	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *DataSetIn {
-		return &DataSetIn{
+	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
+		return &SetDataIn{
 			Token     : "x",
 			Name      : name,
 			Type      : "book",
@@ -269,7 +374,7 @@ func TestAddData(t *testing.T) {
 			"Data correctly added",
 			db.getDataByNameUid,
 			[]any{name, zmId},
-			[]any{&DataSetIn{
+			[]any{&SetDataIn{
 				Token     : "", // not set
 				Name      : name,
 				Type      : "book",
@@ -310,7 +415,7 @@ func TestAddData(t *testing.T) {
 			"Data correctly added (bis)",
 			db.getDataByNameUid,
 			[]any{name, mbId},
-			[]any{&DataSetIn{
+			[]any{&SetDataIn{
 				Token     : "", // not set
 				Name      : name,
 				Type      : "book",
@@ -405,8 +510,8 @@ func TestGetBooks(t *testing.T) {
 
 	name := "superbuniquename"
 
-	mkd := func(path string, uid auth.UserId, lid int64, pub bool) *DataSetIn {
-		return &DataSetIn{
+	mkd := func(path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
+		return &SetDataIn{
 			Token     : "x",
 			Name      : name,
 			Type      : "book",
@@ -717,8 +822,8 @@ func TestGetMetas(t *testing.T) {
 
 	name := "superbuniquename"
 
-	mkd := func(uid auth.UserId, lid int64, pub bool) *DataSetIn {
-		return &DataSetIn{
+	mkd := func(uid auth.UserId, lid int64, pub bool) *SetDataIn {
+		return &SetDataIn{
 			Token     : "x",
 			Name      : name,
 			Type      : "book",
@@ -855,8 +960,8 @@ func TestGetDataOf(t *testing.T) {
 	name := "superbuniquename"
 	name1 := "oook"
 
-	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *DataSetIn {
-		return &DataSetIn{
+	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
+		return &SetDataIn{
 			Token     : "x",
 			Name      : name,
 			Type      : "book",

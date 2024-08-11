@@ -14,37 +14,31 @@ import (
 	"path/filepath"
 )
 
-// TODO: have per user size limits; encode this in a context,
-// which is to be the first argument of DataSet and probably
-// most other such functions (e.g. ctx.CanWrite(uid, xs))
-func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
-	fmt.Println(in, in.LicenseId)
+// Simple wrapper to guard the access to dir (global)
+func writeDataFile(fn, content string) error {
+	fpath := filepath.Join(dir, fn)
+	return writeFile(fpath, []byte(content))
+}
+
+
+// TODO: have per user size limits
+func SetData(db *DB, in *SetDataIn, out *SetDataOut) error {
 	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
 		return err
-	}
-	if !ok {
+	} else if !ok {
 		return fmt.Errorf("Not connected!")
 	}
 
-	in.File = mkRandPath(uid)
 	in.UserId = uid
 
-	// NOTE: we (try to) write the file before adding to the
-	// DB because it's easier to revert in case of issue
-	fpath := filepath.Join(dir, in.File)
-	if err := writeFile(fpath, []byte(in.Content)); err != nil {
-		return err
+	// We're trying to update an already existing entry
+	if in.Id == -1 {
+		in.File = mkRandPath(uid)
+		return db.AddData(in)
 	}
 
-	if err := db.AddData(in); err != nil {
-		// Remove the file we've just added
-		if err2 := os.RemoveAll(fpath); err2 != nil {
-			err = fmt.Errorf("%s; in addition: %s", err, err2)
-		}
-		return err
-	}
-	return nil
+	return db.UpdateData(in)
 }
 
 func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
@@ -153,41 +147,45 @@ func GetLicenses(db *DB, in *GetLicensesIn, out *GetLicensesOut) (err error) {
 	return err
 }
 
-func initData(db *DB) {
+func initData(db *DB) *http.ServeMux {
+	mux := http.NewServeMux()
+
 	// TODO: data edition field
 	// TODO: JS typing
 	// TODO: add an extra CLI parameter --dev or so, and make it so that
 	// the getCaptcha route returns the answer alongside it, so that we
 	// can test things in the front.
-	http.HandleFunc(
+	mux.HandleFunc(
 		"/set/data",
-		auth.Wrap[*DB, DataSetIn, DataSetOut](db, DataSet),
+		auth.Wrap[*DB, SetDataIn, SetDataOut](db, SetData),
 	)
-	http.HandleFunc(
+	mux.HandleFunc(
 		"/get/books",
 		auth.Wrap[*DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
 	)
-	http.HandleFunc(
+	mux.HandleFunc(
 		"/get/about",
 		auth.Wrap[*DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
 	)
 
-	http.HandleFunc(
+	mux.HandleFunc(
 		"/get/metas",
 		auth.Wrap[*DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
 	)
 
-	http.HandleFunc(
+	mux.HandleFunc(
 		"/get/my/data",
 		auth.Wrap[*DB, GetMyDataIn, GetMyDataOut](db, GetMyData),
 	)
 
-	http.HandleFunc(
+	mux.HandleFunc(
 		"/get/licenses",
 		auth.Wrap[*DB, GetLicensesIn, GetLicensesOut](db, GetLicenses),
 	)
 
-	http.HandleFunc("GET /data/",  func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /data/",  func(w http.ResponseWriter, r *http.Request) {
 		GETData(db, dir, w, r)
 	})
+
+	return mux
 }

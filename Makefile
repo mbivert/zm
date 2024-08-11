@@ -10,7 +10,7 @@ VERSION := $(shell /bin/date '+%s')
 # dev site HTTP port
 port = 8001
 
-GOFILES = backend.go data.go config.go db.go db-user.go utils.go
+GOFILES = backend.go data.go types.go config.go db.go db-user.go utils.go
 
 LIBFILES = lib/enums.js lib/assert.js lib/attrs.js lib/bookmark.js \
 	lib/classes.js lib/config.js lib/cut.js lib/db.js lib/fields.js lib/dom.js \

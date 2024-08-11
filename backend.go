@@ -126,14 +126,6 @@ func init() {
 
 var captcha *base64Captcha.Captcha
 
-type GetCaptchaIn struct {
-}
-
-type GetCaptchaOut struct {
-	Id     string `json:"id"`
-	B64Img string `json:"b64img"`
-}
-
 func GetCaptcha(_ *DB, in *GetCaptchaIn, out *GetCaptchaOut) error {
 	id, b64s, _, err := captcha.Generate()
 	if err != nil {
@@ -143,16 +135,6 @@ func GetCaptcha(_ *DB, in *GetCaptchaIn, out *GetCaptchaOut) error {
 	out.Id     = id
 	out.B64Img = b64s
 	return nil
-}
-
-type CheckCaptchaIn struct {
-	Id     string `json:"id"`
-	Answer string `json:"answer"`
-}
-
-type CheckCaptchaOut struct {
-	Match     bool `json:"match"`
-	GetCaptchaOut
 }
 
 func CheckCaptcha(_ *DB, in *CheckCaptchaIn, out *CheckCaptchaOut) error {
@@ -171,21 +153,6 @@ func CheckCaptcha(_ *DB, in *CheckCaptchaIn, out *CheckCaptchaOut) error {
 	out.Id     = id
 	out.B64Img = b64s
 	return nil
-}
-
-type SigninIn struct {
-	auth.SigninIn
-
-	CaptchaId     string // `json:"captchaid"`
-	CaptchaAnswer string // `json:"captchaanswer"`
-}
-
-type SigninOut struct {
-	auth.SigninOut
-
-	CaptchaMatch  bool   `json:"captchamatch"`
-	CaptchaId     string `json:"captchaid"`
-	CaptchaB64Img string `json:"captchab64img"`
 }
 
 func Signin(db *DB, in *SigninIn, out *SigninOut) error {
@@ -238,24 +205,6 @@ func main() {
 	// and eventually document it
 	http.HandleFunc("/auth/signin", auth.Wrap[*DB, SigninIn, SigninOut](db, Signin))
 
-	// TODO: data edition field
-	// TODO: s,/data/set,/set/data & do it for all
-	// TODO: JS typing
-	// TODO: use a context over DB as an argument. Context should
-	// hold eventually a regular context.Context, the DB, dir, captcha
-	// TODO: add an extra CLI parameter --dev or so, and make it so that
-	// the getCaptcha route returns the answer alongside it, so that we
-	// can test things in the front.
-	http.HandleFunc("POST /data/set", auth.Wrap[*DB, DataSetIn, DataSetOut](db, DataSet))
-	http.HandleFunc(
-		"POST /data/get/books",
-		auth.Wrap[*DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
-	)
-	http.HandleFunc(
-		"POST /data/get/about",
-		auth.Wrap[*DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
-	)
-
 	captcha = base64Captcha.NewCaptcha(
 		base64Captcha.NewDriverDigit(100, 240, 4, 0.7, 80),
 		base64Captcha.DefaultMemStore,
@@ -264,24 +213,7 @@ func main() {
 	http.HandleFunc("/captcha/get", auth.Wrap[*DB, GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
 	http.HandleFunc("/captcha/check", auth.Wrap[*DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
 
-	http.HandleFunc(
-		"POST /data/get/metas",
-		auth.Wrap[*DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
-	)
-
-	http.HandleFunc(
-		"/get/my/data",
-		auth.Wrap[*DB, GetMyDataIn, GetMyDataOut](db, GetMyData),
-	)
-
-	http.HandleFunc(
-		"/get/licenses",
-		auth.Wrap[*DB, GetLicensesIn, GetLicensesOut](db, GetLicenses),
-	)
-
-	http.HandleFunc("GET /data/",  func(w http.ResponseWriter, r *http.Request) {
-		GETData(db, dir, w, r)
-	})
+	initData(db)
 
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)

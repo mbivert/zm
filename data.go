@@ -14,62 +14,6 @@ import (
 	"path/filepath"
 )
 
-type DataType string
-
-// XXX we have it 3 times now: JS, Go, SQL
-const (
-	dataTDict DataType = "dict"
-	dataTDecomp        = "decomp"
-	dataTBig5          = "big5"
-	dataTBook          = "book"
-	dataTPieces        = "pieces"
-)
-
-type DataFmt string
-
-const (
-	dataFCCCEdict DataFmt = "cc-cedict"
-	dataFWMDecomp         = "wm-decomp"
-	dataFChise            = "chise"
-	dataFUnicodeBig5      = "unicode-big5"
-	dataFMarkdown         = "markdown"
-	dataFSWMarkdown       = "sw-markdown"
-	dataFSimpleDict       = "simple-dict"
-	dataFPieces           = "pieces"
-)
-
-type DataSetIn struct {
-	Token     string   `json:"token"`
-	Name      string   `json:"name"`
-	Type      DataType `json:"type"`
-	Descr     string   `json:"descr"`
-	Fmt       DataFmt  `json:"fmt"`
-
-	Public    bool     `json:"public"`
-
-	LicenseId int64    `json:"licenseid"`
-
-	// XXX We at least would want to check that
-	// this looks like a URL
-	// rename to url?
-	UrlInfo   string   `json:"urlinfo"`
-
-	// Okay, we'll do that for now, this should be
-	// good enough for a first draft, and small documents.
-	Content   string   `json:"content"`
-
-	// This two are automatically computed
-	File      string
-	UserId    auth.UserId
-
-	// NOTE/TODO: this is for now only used for db tests,
-	// but might come handy for data edition.
-	Id        int64
-}
-
-type DataSetOut struct {
-}
-
 // TODO: have per user size limits; encode this in a context,
 // which is to be the first argument of DataSet and probably
 // most other such functions (e.g. ctx.CanWrite(uid, xs))
@@ -103,24 +47,6 @@ func DataSet(db *DB, in *DataSetIn, out *DataSetOut) error {
 	return nil
 }
 
-// XXX meh, that's quite a reduced book; make it a DataGetBooksOut
-// or something perhaps
-type Book struct {
-	Name    string `json:"name"`
-	Descr   string `json:"descr"`
-	File    string `json:"file"`
-	UrlInfo string `json:"urlinfo"`
-	Owned   bool   `json:"owned"`
-}
-
-type DataGetBooksIn struct {
-	Token string `json:"token"`
-}
-
-type DataGetBooksOut struct {
-	Books []Book `json:"books"`
-}
-
 func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
 	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
@@ -134,43 +60,10 @@ func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
 	return err
 }
 
-type About struct {
-	Type       DataType `json:"type"`
-	Name       string   `json:"name"`
-	UrlInfo    string   `json:"urlinfo"`
-	License    string   `json:"license"`
-	UrlLicense string   `json:"urllicense"`
-}
-
-type DataGetAboutIn struct {
-}
-
-type DataGetAboutOut struct {
-	Datas []About `json:"datas"`
-}
-
 func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) (err error) {
 	// TODO: add the configuration to our context as well
 	out.Datas, err = db.GetAbouts(C.ZmId)
 	return err
-}
-
-type DataGetMetasIn struct {
-	Token string   `json:"token"`
-	Names []string `json:"names"`
-}
-
-// TODO: we may want to merge this with About;
-// naming for sure will have to be unified.
-type Metas struct {
-	Type       DataType `json:"type"`
-	Name       string   `json:"name"`
-	Fmt        DataFmt  `json:"fmt"`
-	File       string   `json:"file"`
-}
-
-type DataGetMetasOut struct {
-	Metas []Metas `json:"metas"`
 }
 
 // NOTE: the meta datas are computed from user preferences: they
@@ -225,38 +118,6 @@ Err:
 	fails(w, err)
 }
 
-type GetMyDataIn struct {
-	Token string `json:"token"`
-}
-
-// NOTE: we're getting close to './lib.d.ts:/^interface Data/',
-// but not there yet.
-type Data struct {
-	Id          int64    `json:"id"`
-	Name        string   `json:"name"`
-
-	Type        DataType `json:"type"`
-	Descr       string   `json:"descr"`
-
-	// .File is only used to fill content in GetMyData();
-	// we return it nevertheless.
-	File        string   `json:"file"`
-	Fmt         DataFmt  `json:"fmt"`
-
-	UrlInfo     string   `json:"urlinfo"`
-
-	Content     string   `json:"content"`
-
-	Public      bool     `json:"public"`
-
-	LicenseId   int64    `json:"licenseid"`
-	LicenseName string   `json:"licensename"`
-}
-
-type GetMyDataOut struct {
-	Datas []Data
-}
-
 func loadContents(ds []Data) (error) {
 	for i, d := range ds {
 		// XXX dir is a CLI arg
@@ -287,24 +148,46 @@ func GetMyData(db *DB, in *GetMyDataIn, out *GetMyDataOut) (err error) {
 	return loadContents(out.Datas)
 }
 
-type License struct {
-	Id    int64   `json:"id"`
-	Name  string  `json:"name"`
-
-	// XXX We currently don't need those, but perhaps we
-	// should grab them too?
-//	Descr string
-//	URL   string
-}
-
-type GetLicensesIn struct {
-}
-
-type GetLicensesOut struct {
-	Licenses []License
-}
-
 func GetLicenses(db *DB, in *GetLicensesIn, out *GetLicensesOut) (err error) {
 	out.Licenses, err = db.GetLicenses()
 	return err
+}
+
+func initData(db *DB) {
+	// TODO: data edition field
+	// TODO: JS typing
+	// TODO: add an extra CLI parameter --dev or so, and make it so that
+	// the getCaptcha route returns the answer alongside it, so that we
+	// can test things in the front.
+	http.HandleFunc(
+		"/set/data",
+		auth.Wrap[*DB, DataSetIn, DataSetOut](db, DataSet),
+	)
+	http.HandleFunc(
+		"/get/books",
+		auth.Wrap[*DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
+	)
+	http.HandleFunc(
+		"/get/about",
+		auth.Wrap[*DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
+	)
+
+	http.HandleFunc(
+		"/get/metas",
+		auth.Wrap[*DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
+	)
+
+	http.HandleFunc(
+		"/get/my/data",
+		auth.Wrap[*DB, GetMyDataIn, GetMyDataOut](db, GetMyData),
+	)
+
+	http.HandleFunc(
+		"/get/licenses",
+		auth.Wrap[*DB, GetLicensesIn, GetLicensesOut](db, GetLicenses),
+	)
+
+	http.HandleFunc("GET /data/",  func(w http.ResponseWriter, r *http.Request) {
+		GETData(db, dir, w, r)
+	})
 }

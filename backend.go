@@ -34,12 +34,13 @@ import (
 var C Config
 
 // CLI parameters
-var port     string
-var usock    string
-var dir      string
-var fastcgi  bool
-var configFn string
-var openbsd  bool
+var port      string
+var usock     string
+var dir       string
+var fastcgi   bool
+var configFn  string
+var aconfigFn string
+var openbsd   bool
 
 var indexPageTmpl = template.Must(template.New("").Parse(""+
 `<!DOCTYPE html>
@@ -96,7 +97,7 @@ var indexPageTmpl = template.Must(template.New("").Parse(""+
 			<div id="main"></div>
 			<div id="footer">
 				<p>
-					© Last update: 2024-08-06 - WIP -
+					© Last update: 2024-08-12 - WIP -
 					<a href="https://github.com/mbivert/zm/">code</a> -
 					<a href="https://github.com/mbivert/zm-data/">data</a>;
 					optimized for desktop</p>
@@ -115,6 +116,7 @@ func init() {
 	flag.StringVar(&usock,    "u", "",              "If set, listen on unix socket over TCP port")
 	flag.BoolVar(&fastcgi,    "f", false,           "If set, use the UNIX socket and FastCGI")
 	flag.StringVar(&configFn, "c", "config.json",   "/path/to/config.json")
+	flag.StringVar(&aconfigFn, "a", "config.auth.json",   "/path/to/config.auth.json")
 	flag.BoolVar(&openbsd,    "o", false,           "Tweaks for OpenBSD")
 
 	flag.Parse();
@@ -244,7 +246,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if err := auth.LoadConf("config.auth.json"); err != nil {
+	if err := auth.LoadConf(aconfigFn); err != nil {
 		log.Fatal(err)
 	}
 

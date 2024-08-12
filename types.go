@@ -75,7 +75,7 @@ const (
 	dataFPieces           = "pieces"
 )
 
-// XXX meh, that's quite a reduced book; make it a DataGetBooksOut
+// XXX meh, that's quite a reduced book; make it a GetBooksOut
 // or something perhaps
 type Book struct {
 	Name    string `json:"name"`
@@ -173,27 +173,27 @@ type SetDataIn struct {
 type SetDataOut struct {
 }
 
-type DataGetBooksIn struct {
+type GetBooksIn struct {
 	Token string `json:"token"`
 }
 
-type DataGetBooksOut struct {
+type GetBooksOut struct {
 	Books []Book `json:"books"`
 }
 
-type DataGetAboutIn struct {
+type GetAboutIn struct {
 }
 
-type DataGetAboutOut struct {
+type GetAboutOut struct {
 	Datas []About `json:"datas"`
 }
 
-type DataGetMetasIn struct {
+type GetMetasIn struct {
 	Token string   `json:"token"`
 	Names []string `json:"names"`
 }
 
-type DataGetMetasOut struct {
+type GetMetasOut struct {
 	Metas []Metas `json:"metas"`
 }
 

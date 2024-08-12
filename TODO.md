@@ -10,25 +10,59 @@ expected implementation complexity.
 
 A small amount of old/unsorted items are located at the end of the file.
 
+# medium @cross-compilation-issues
+	Deployment is currently broken because of a cross-compilation issue.
+	With CGO_ENABLED=, we can get away with it by not referencing sqlite3
+	(impact is more cryptic error messages).
+
+	But even with that, for some reasons, all requests goes to 404. This
+	may be related to the way we mux things. We need to:
+		- write a small test to pin-point the actual compilation issues
+		- write a small test to test the 404 thing
+		- setup an automated, remote OpenBSD testing environment.
+
+	Is currently deployed: 7d2297bd32137ffe2bd3bf612805c2650541d74f
+
+		$ env GOOS=openbsd GOARCH=amd64 make -B quick-site
+		Creating db-json-export.sql...
+		Creating lib/db.js...
+		Re(creating) lib/config.js...
+		Getting pako...
+		Creating lib/enums.js...
+		Building backend...
+		# command-line-arguments
+		./db.go:91:29: undefined: sqlite3.Error
+		./db.go:93:27: undefined: sqlite3.ErrConstraint
+		./db.go:94:36: undefined: sqlite3.ErrConstraintForeignKey
+		./db.go:103:29: undefined: sqlite3.Error
+		./db.go:105:27: undefined: sqlite3.ErrConstraint
+		./db.go:106:36: undefined: sqlite3.ErrConstraintUnique
+		make: *** [Makefile:131: backend] Error 1
+
+		$ env GOOS=openbsd GOARCH=amd64 CGO_ENABLED=1 make -B quick-site
+		Creating db-json-export.sql...
+		Creating lib/db.js...
+		Re(creating) lib/config.js...
+		Getting pako...
+		Creating lib/enums.js...
+		Building backend...
+		# net
+		/usr/lib/go/src/net/cgo_resold.go:20:76: cannot use _Ctype_size_t(len(b)) (value of type _Ctype_ulong) as _Ctype_uint value in argument to (_C2func_getnameinfo)
+		make: *** [Makefile:131: backend] Error 1
+
 Current goals:
+  - @cross-compilation-issues
   - @setup-scripts
-  - Working on @backend, @data-organisation; in particular, the (external) auth module
-  feels good enough, let's try it for real
-  	- Go tests: for data.go
-  		- we also want to unify fields names
-  		(e.g. UrlLicense vs. LicenseId, Data.UrlInfo -> URL, etc.).
-  		corresponding update in ../auth/
+  - @flexible-view
+  - bug in bin/check-data.js
+  - Kept around from previous run:
     - login failure when Data.File doesn't exist
     	- all those should be fixed as we add tests
-  	- Currently working on a first draft; main features remaining:
-  		- data edition is mostly done (UI ~works, route/db query are missing)
     - tests from JS
-    - RPC.call() error display
     - verification url, submission & auto-login
 
 Major user features (~expected order):
-  - @backend
-  - @flexible-view (see @better-cut) / UI-typing
+  - @flexible-view, @translations-management (see @better-cut) / UI-typing
   - @prefs-edition
   - @multilang
     - http://etym.org/
@@ -220,7 +254,37 @@ A few identified bugs. SQL database scheme prototype.
 ## small @data-file-upload
 	Allow file upload in addition to the <textarea>.
 
+## small @backend-tests @backend-tests-cleanup
+	We're missing tests for:
+		- GETData()
+		- GetMyData()
+	We also would want to work from a stripped database to
+	make the tests less verbose.
+
+## small @fields-renaming
+	We have a few inconsistancies in various field names and
+	other things we should be able to clarify/shorten
+	(e.g. UrlLicense vs. LicenseId, Data.UrlInfo -> URL, etc.)
+
+	This may require some update in ../auth, and for sure in the
+	JS.
+
+## small @js-rpc-typing
+	Some of the typing is missing around the RPC call. Perhaps
+	to be handled around with clean @backend-tests-cleanup
+
+## small @content-parsing
+	We could automatically try to parse the content when editing/adding
+	it, at least to check it's correctly formatted.
+
+## small/medium @js-error-display
+	All errors are shown, but it's done poorly, and some
+	of the error handling could be refined as well.
+
 ## medium @data-edition
+	update(2024-08-12): data edition is ~working. Keeping this
+	opened because of the remarks reganding the preferences.
+
 	We can roughly add data; we'll want to be able to edit it.
 	Mind the fact that we still reference data by their names
 	in the user preferences (see @prefs-edition, which will be
@@ -238,7 +302,7 @@ A few identified bugs. SQL database scheme prototype.
 
 	We'd now need to query the backend.
 
-## meidum @prefs-edition
+## medium @prefs-edition
 	(missing?)
 
 	We need a from to edit the user preferences.
@@ -439,79 +503,12 @@ A few identified bugs. SQL database scheme prototype.
 
 	To be correlated with @backend.
 
-## medium @data-organisation
-	Operations:
-		- AddData()
-			- Use a single form for both AddBook() and AddDict();
-			we might even want to use a single form for *all* data
-			types. This can be added on the account page (future login.html)
-			- AddBook()
-			- AddLicense()
-				- Use a component to wrap creation of a new license
-				around selecting a potentially existing one
-				- Fields:
-					Name
-					Descr
-					URL
+## medium @add-licenses
+	Currently users can only choose from a hardcoded list
+	of licenses. We *may* want to allow user-submitted licenses.
 
-			- AddDict()
-
-			// Those two are for later, but keep them in mind
-			/ AddTranslation()
-				- Translations are currently very fragile. We'd
-				want to be more flexible (e.g. cut/join chunks
-				from the UI), so let's do that later
-			/ AddDecomp()
-		- GetData()
-			- For now, we essentially keep those files static, available
-			via a GET request, but guarded with a potential token check.
-			The token is provided via a HTTP cookie (special case).
-			- GetBook()
-				- RPC.fget() does the job for now. The permission bits
-				(token != "") is yet to be tested, let's wait for AddBook().
-
-		// Edition will be for later as well.
-		/ EditData()
-			- EditBook()
-				- We could have a global page to edit books, but perhaps
-				we'd want to also be able to edit them locally (e.g.
-				edit a chunk: as a first impl. we could merely send the
-				whole book with the edited chunk).
-
-				- If the book is public, we'll want to have a way to
-				automatically copy the book to a personnal copy. Books
-				should be stable enough for us not to bother with a
-				patching mechanism.
-
-			- EditDict()
-				- Small dicts would be okay to edit globally, but we'll
-				mostly want to be able to perform small, on-the-fly edits.
-				- The dict edition is a bit trickier, because we want
-				to handle both genuine edition and patches edition.
-			- For both books & dicts, we'll want to have a mechanism to
-			automatically create a personal copy
-
-	See @books-metadata, @database, @backend, @ressources-fetch.
-	@dict-sources, @dict-parsing-error, @data-subdivision
-
-	We're working on a SQL database scheme in ./schema.sql and ./schema2.sql,
-	which is for now automatically injected as ./modules/db.js via ./Makefile.
-
-	We're starting to conceputalized data access so as to later be able to implement
-	various features (@multidict, @multidec, @dict-decomp-web-edition)
-
-	The database would be usefull in multiple ways:
-		- data update/fetch: we don't want to have to install node.js or similar
-		  on backend, so we'll want those things to either be Golang/Perl/Shell/whatever.
-		  More standard unix tooling.
-		- front-end access: front-end would access cached, compressed, pre-downloaded
-		  version of the data. We'll allow some special data type allowing to e.g.
-		  build a dictionary from original source + some user patches. We'll need to
-		  develop something handy to allow automatic update without impacting user
-		  patches.
-
-	If we allow user patching, update method should take ensure all
-	patches are valid before properly updating a dict.
+## medium @translations-management
+	To be correlated with @flexible-view.
 
 ## medium @character-recognition-input
 	Add the ability to handwrite characters, using an external module; see
@@ -876,23 +873,12 @@ A few identified bugs. SQL database scheme prototype.
 
 	Can we have a pict.csv for ancient forms?
 
-## medium/long @backend @database
-	(update)
-	Other backend features to consider:
-		- user preferences; 
-		- currently, books aren't managed in data.js; we'll want
-		to see if there are any good reasons
-
-	Other data we'll want to store in database:
+## medium @links-database
+	External links / links to images are for now hardcoded.
+	We should find ways to make those user-editable. See
 		- 'lib/links.js:/^var links/' (there are a few bits for
 		that in schema2.sql already)
 		- Also 'lib/links.js:/^var imgs/' and 'lib/links.js:/^var audios/'
-		- We want to be careful
-			- There's too much to implement at once;
-			- But we have an idea of what we'll probably implement, so
-			we have to prepare for flexibility.
-
-	(end update)
 
 ## medium/long @commented-books
 	We'll need to grow this alongside @backend, @database, @data-organisation,

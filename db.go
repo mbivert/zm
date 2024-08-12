@@ -22,7 +22,7 @@ import (
 	"sync"
 	"strconv"
 	"strings"
-	"github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 	"testing"
 
 	"github.com/mbivert/auth"
@@ -88,6 +88,13 @@ func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 
 // This is clumsy: https://github.com/mattn/go-sqlite3/issues/949
 func isErrConstraintFk(err error) bool {
+	return false
+}
+func isErrConstraintUniq(err error) bool {
+	return false
+}
+/*
+func isErrConstraintFk(err error) bool {
 	err2, ok := (err).(sqlite3.Error)
 	if ok {
 		if err2.Code == sqlite3.ErrConstraint {
@@ -110,6 +117,7 @@ func isErrConstraintUniq(err error) bool {
 	}
 	return false
 }
+*/
 
 func tryRollback(tx *sql.Tx, err error) error {
 	if err2 := tx.Rollback(); err2 != nil {

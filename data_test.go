@@ -5,6 +5,10 @@ package main
  * handlers instead of directly.
  *
  * This should be fine-grained enough.
+ *
+ * Furthermore, we're focusing on testing the local
+ * code of data.go functions: finer tests for DB access
+ * can be found in db_test.go.
  */
 
 import (
@@ -175,8 +179,33 @@ func mustParseJSON(s string) any {
 	return x
 }
 
-// We're only testing what's happening locally in 'data.go:/^func SetData\(';
-// finer tests can be found in db_test.go
+func mkLoginWith(uname string, uid auth.UserId) ftests.Test {
+	// can't be declared static because of the handler thing
+	return ftests.Test{
+		"Valid user/password",
+		callURLWithToken,
+		[]any{handler, "/auth/login", map[string]any{
+			"login"  : uname,
+			"passwd" : "{c=!aW}4:1J~UR]j\"q|Q",
+		}},
+		[]any{map[string]any{
+			"token" : jwt.MapClaims{
+				"date" : 0,          // redacted to ease tests
+				"uniq" : "redacted", // idem
+				"uid"  : float64(uid),
+			},
+		}},
+	}
+}
+
+func mkLoginWithZM() ftests.Test {
+	return mkLoginWith("zhongmu", zmId)
+}
+
+func mkLoginWithMb() ftests.Test {
+	return mkLoginWith("mbivert", mbId)
+}
+
 func TestSetData(t *testing.T) {
 	initDataTest()
 
@@ -219,21 +248,7 @@ func TestSetData(t *testing.T) {
 				"err" : "Not connected!",
 			}},
 		},
-		{
-			"Valid user/password",
-			callURLWithToken,
-			[]any{handler, "/auth/login", map[string]any{
-				"login"  : "zhongmu",
-				"passwd" : "{c=!aW}4:1J~UR]j\"q|Q",
-			}},
-			[]any{map[string]any{
-				"token" : jwt.MapClaims{
-					"date" : 0,          // redacted to ease tests
-					"uniq" : "redacted", // idem
-					"uid"  : float64(zmId),
-				},
-			}},
-		},
+		mkLoginWithZM(),
 	})
 
 	data := mkd(name, path, zmId, cc0Id, true)
@@ -307,6 +322,486 @@ func TestSetData(t *testing.T) {
 			readDataFile,
 			[]any{data.File},
 			[]any{data.Content, nil},
+		},
+	})
+}
+
+func TestDataGetBooks(t *testing.T) {
+	initDataTest()
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Invalid input",
+			callURL,
+			[]any{handler, "/get/books", "", ""},
+			[]any{map[string]any{
+				"err": "JSON decoding failure: json: cannot unmarshal string into Go value of type main.GetBooksIn",
+			}},
+		},
+		{
+			"Not logged in",
+			callURL,
+			[]any{handler, "/get/books", &GetBooksIn{}, ""},
+			[]any{map[string]any{
+				"err" : "Not connected!",
+			}},
+		},
+		mkLoginWithZM(),
+	})
+
+	// again, the needless verbosity sucks, but that'll do for now.
+	ftests.Run(t, []ftests.Test{
+		{
+			"Retrieving books, connected as zm",
+			callURL,
+			[]any{handler, "/get/books", &GetBooksIn{}, tokenStr},
+			[]any{mustParseJSON(`{
+        		"books": [
+        			{
+        				"descr": "WikiSource version of the ShuoWen JieZi",
+        				"file": "data/books/shuo-wen-jie-zi.src",
+        				"name": "Shuowen Jiezi, book (Wikisource)",
+        				"owned": true,
+        				"urlinfo": "https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97"
+        			},
+        			{
+        				"descr": "Bai Xia Jing",
+        				"file": "data/books/bai-jia-xing.src",
+        				"name": "Bai Jia Xing",
+        				"owned": true,
+        				"urlinfo": "https://www.gutenberg.org/files/25196/25196-0.txt"
+        			},
+        			{
+        				"descr": "Qian Zi Wen",
+        				"file": "data/books/qian-zi-wen.src",
+        				"name": "Qian Zi Wen",
+        				"owned": true,
+        				"urlinfo": "https://zh.wikisource.org/wiki/%E5%8D%83%E5%AD%97%E6%96%87"
+        			},
+        			{
+        				"descr": "Three Character Classic, original",
+        				"file": "data/books/san-zi-jing.src",
+        				"name": "三字經 (Three Character Classic)",
+        				"owned": true,
+        				"urlinfo": "https://ctext.org/three-character-classic"
+        			},
+        			{
+        				"descr": "Sun-Tzu s Art of war",
+        				"file": "data/books/art-of-war.src",
+        				"name": "Art of war (partial)",
+        				"owned": true,
+        				"urlinfo": "https://ctext.org/art-of-war/"
+        			},
+        			{
+        				"descr": "Three Character Classic translated by Herbert Giles",
+        				"file": "data/books/san-zi-jing.tr",
+        				"name": "Three Character Classic (translation)",
+        				"owned": true,
+        				"urlinfo": "https://ctext.org/three-character-classic"
+        			},
+        			{
+        				"descr": "Sun-Tzu s Art of war",
+        				"file": "data/books/art-of-war.tr",
+        				"name": "Art of war (translation)",
+        				"owned": true,
+        				"urlinfo": "https://ctext.org/art-of-war/"
+        			},
+        			{
+        				"descr": "Le Classique des Trois Caractères, traduit par Deverge",
+        				"file": "data/books/san-zi-jing-fr.tr",
+        				"name": "Le Classique des Trois Caractères",
+        				"owned": true,
+        				"urlinfo": "http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing\u0026s=1\u0026lang=fr"
+        			},
+        			{
+        				"descr": "First few paragraphs from Tolstoï s Father Serge, in Russian",
+        				"file": "data/books/father-serge-tolstoi.src",
+        				"name": "Father Serge, Tolstoï (Отец Сергий, Толстой) (partial)",
+        				"owned": true,
+        				"urlinfo": "https://en.wikisource.org/wiki/Father_Sergius"
+        			}
+        		]
+        	}`)},
+		},
+		mkLoginWithMb(),
+	})
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Retrieving books, connected as mb",
+			callURL,
+			[]any{handler, "/get/books", &GetBooksIn{}, tokenStr},
+			[]any{mustParseJSON(`{
+        		"books": [
+        			{
+        				"descr": "WikiSource version of the ShuoWen JieZi",
+        				"file": "data/books/shuo-wen-jie-zi.src",
+        				"name": "Shuowen Jiezi, book (Wikisource)",
+        				"owned": false,
+        				"urlinfo": "https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97"
+        			},
+        			{
+        				"descr": "Bai Xia Jing",
+        				"file": "data/books/bai-jia-xing.src",
+        				"name": "Bai Jia Xing",
+        				"owned": false,
+        				"urlinfo": "https://www.gutenberg.org/files/25196/25196-0.txt"
+        			},
+        			{
+        				"descr": "Qian Zi Wen",
+        				"file": "data/books/qian-zi-wen.src",
+        				"name": "Qian Zi Wen",
+        				"owned": false,
+        				"urlinfo": "https://zh.wikisource.org/wiki/%E5%8D%83%E5%AD%97%E6%96%87"
+        			},
+        			{
+        				"descr": "Three Character Classic, original",
+        				"file": "data/books/san-zi-jing.src",
+        				"name": "三字經 (Three Character Classic)",
+        				"owned": false,
+        				"urlinfo": "https://ctext.org/three-character-classic"
+        			},
+        			{
+        				"descr": "Sun-Tzu s Art of war",
+        				"file": "data/books/art-of-war.src",
+        				"name": "Art of war (partial)",
+        				"owned": false,
+        				"urlinfo": "https://ctext.org/art-of-war/"
+        			},
+        			{
+        				"descr": "Three Character Classic translated by Herbert Giles",
+        				"file": "data/books/san-zi-jing.tr",
+        				"name": "Three Character Classic (translation)",
+        				"owned": false,
+        				"urlinfo": "https://ctext.org/three-character-classic"
+        			},
+        			{
+        				"descr": "Sun-Tzu s Art of war",
+        				"file": "data/books/art-of-war.tr",
+        				"name": "Art of war (translation)",
+        				"owned": false,
+        				"urlinfo": "https://ctext.org/art-of-war/"
+        			},
+        			{
+        				"descr": "Le Classique des Trois Caractères, traduit par Deverge",
+        				"file": "data/books/san-zi-jing-fr.tr",
+        				"name": "Le Classique des Trois Caractères",
+        				"owned": false,
+        				"urlinfo": "http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing\u0026s=1\u0026lang=fr"
+        			},
+        			{
+        				"descr": "First few paragraphs from Tolstoï s Father Serge, in Russian",
+        				"file": "data/books/father-serge-tolstoi.src",
+        				"name": "Father Serge, Tolstoï (Отец Сергий, Толстой) (partial)",
+        				"owned": false,
+        				"urlinfo": "https://en.wikisource.org/wiki/Father_Sergius"
+        			}
+        		]
+        	}`)},
+		},
+	})
+
+}
+
+func TestDataGetAbouts(t *testing.T) {
+	initDataTest()
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Invalid input",
+			callURL,
+			[]any{handler, "/get/about", "", ""},
+			[]any{map[string]any{
+				"err": "JSON decoding failure: json: cannot unmarshal string into Go value of type main.GetAboutIn",
+			}},
+		},
+		{
+			"Invalid input",
+			callURL,
+			[]any{handler, "/get/about", &GetAboutIn{}, ""},
+			[]any{mustParseJSON(`{
+        		"datas": [
+        			{
+        				"license": "CC BY-SA 4.0",
+        				"name": "CC-CEDICT",
+        				"type": "dict",
+        				"urlinfo": "https://cc-cedict.org/wiki/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/4.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 4.0",
+        				"name": "ZM-add",
+        				"type": "dict",
+        				"urlinfo": "https://zhongmu.eu/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/4.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 4.0",
+        				"name": "CC-CEDICT-singles",
+        				"type": "dict",
+        				"urlinfo": "https://zhongmu.eu/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/4.0/"
+        			},
+        			{
+        				"license": "GPLv2",
+        				"name": "CHISE-ids",
+        				"type": "decomp",
+        				"urlinfo": "http://chise.org",
+        				"urllicense": "https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html"
+        			},
+        			{
+        				"license": "CC BY-SA 4.0",
+        				"name": "ZM-pict",
+        				"type": "dict",
+        				"urlinfo": "https://zhongmu.eu/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/4.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 3.0",
+        				"name": "WM-decomp",
+        				"type": "decomp",
+        				"urlinfo": "https://commons.wikimedia.org/wiki/Commons:Chinese_characters_decomposition",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/3.0/"
+        			},
+        			{
+        				"license": "Unicode ToS",
+        				"name": "Unicode-BIG5",
+        				"type": "big5",
+        				"urlinfo": "https://unicode.org/Public/MAPPINGS/OBSOLETE/EASTASIA/OTHER/BIG5.TXT",
+        				"urllicense": "https://www.unicode.org/copyright.html"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Shuowen Jiezi, book (Wikisource)",
+        				"type": "book",
+        				"urlinfo": "https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "WS-shuowen",
+        				"type": "dict",
+        				"urlinfo": "https://en.wikisource.org/wiki/zh:%E8%AA%AA%E6%96%87%E8%A7%A3%E5%AD%97",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 4.0",
+        				"name": "CFDICT",
+        				"type": "dict",
+        				"urlinfo": "https://chine.in/mandarin/dictionnaire/CFDICT/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/4.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 2.0",
+        				"name": "HanDeDict",
+        				"type": "dict",
+        				"urlinfo": "https://handedict.zydeo.net/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/2.0/"
+        			},
+        			{
+        				"license": "Gutenberg license",
+        				"name": "Bai Jia Xing",
+        				"type": "book",
+        				"urlinfo": "https://www.gutenberg.org/files/25196/25196-0.txt",
+        				"urllicense": "http://gutenberg.org/license"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Qian Zi Wen",
+        				"type": "book",
+        				"urlinfo": "https://zh.wikisource.org/wiki/%E5%8D%83%E5%AD%97%E6%96%87",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "三字經 (Three Character Classic)",
+        				"type": "book",
+        				"urlinfo": "https://ctext.org/three-character-classic",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 4.0",
+        				"name": "OpenRussian",
+        				"type": "dict",
+        				"urlinfo": "https://en.openrussian.org/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/4.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 3.0",
+        				"name": "ZM-decomp",
+        				"type": "decomp",
+        				"urlinfo": "https://zhongmu.eu/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/3.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 4.0",
+        				"name": "CFDICT-singles",
+        				"type": "dict",
+        				"urlinfo": "https://zhongmu.eu/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/4.0/"
+        			},
+        			{
+        				"license": "CC BY-SA 2.0",
+        				"name": "HanDeDict-singles",
+        				"type": "dict",
+        				"urlinfo": "https://zhongmu.eu/",
+        				"urllicense": "https://creativecommons.org/licenses/by-sa/2.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Art of war (partial)",
+        				"type": "book",
+        				"urlinfo": "https://ctext.org/art-of-war/",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Three Character Classic (translation)",
+        				"type": "book",
+        				"urlinfo": "https://ctext.org/three-character-classic",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Three Character Classic (pieces)",
+        				"type": "pieces",
+        				"urlinfo": "https://ctext.org/three-character-classic",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Art of war (translation)",
+        				"type": "book",
+        				"urlinfo": "https://ctext.org/art-of-war/",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Art of war (pieces)",
+        				"type": "pieces",
+        				"urlinfo": "https://ctext.org/art-of-war/",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Le Classique des Trois Caractères",
+        				"type": "book",
+        				"urlinfo": "http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing\u0026s=1\u0026lang=fr",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Le Classique des Trois Caractères (pieces)",
+        				"type": "pieces",
+        				"urlinfo": "http://wengu.tartarie.com/wg/wengu.php?l=Sanzijing\u0026s=1\u0026lang=fr",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			},
+        			{
+        				"license": "CC0 1.0",
+        				"name": "Father Serge, Tolstoï (Отец Сергий, Толстой) (partial)",
+        				"type": "book",
+        				"urlinfo": "https://en.wikisource.org/wiki/Father_Sergius",
+        				"urllicense": "https://creativecommons.org/publicdomain/zero/1.0/"
+        			}
+        		]
+        	}`)},
+		},
+	})
+}
+
+func TestDataGetMetas(t *testing.T) {
+	initDataTest()
+
+	path := "private/data/path"
+
+	name := "superbuniquename"
+
+	mkd := func(uid auth.UserId, lid int64, pub bool) *SetDataIn {
+		return &SetDataIn{
+			Token     : "x",
+			Name      : name,
+			Type      : "book",
+			Descr     : "foo",
+			Fmt       : "markdown",
+			Public    : pub,
+			LicenseId : lid,
+			UrlInfo   : "x",
+			Content   : "foo",
+			File      : path,
+			UserId    : uid,
+			Id        : -1,
+		}
+	}
+
+	book := mkd(zmId, cc0Id, false)
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Invalid input",
+			callURL,
+			[]any{handler, "/get/metas", "", ""},
+			[]any{map[string]any{
+				"err": "JSON decoding failure: json: cannot unmarshal string into Go value of type main.GetMetasIn",
+			}},
+		},
+		{
+			"Not logged in: can access (literal) nothing",
+			callURL,
+			[]any{handler, "/get/metas", &GetMetasIn{
+				Names : []string{},
+			}, ""},
+			[]any{mustParseJSON(`{
+        		"metas": []
+        	}`)},
+		},
+		{
+			"Not logged in: can access public books",
+			callURL,
+			[]any{handler, "/get/metas", &GetMetasIn{
+				Names : []string{"Shuowen Jiezi, book (Wikisource)"},
+			}, ""},
+			[]any{mustParseJSON(`{
+        		"metas": [
+        			{
+        				"file": "data/books/shuo-wen-jie-zi.src",
+        				"fmt": "markdown",
+        				"name": "Shuowen Jiezi, book (Wikisource)",
+        				"type": "book"
+        			}
+        		]
+        	}`)},
+		},
+		{
+			"Add a private book",
+			db.AddData,
+			[]any{book},
+			[]any{nil},
+		},
+		{
+			"Not logged in: can't access private book",
+			callURL,
+			[]any{handler, "/get/metas", &GetMetasIn{
+				Names : []string{name},
+			}, ""},
+			[]any{mustParseJSON(`{ "metas" : [] }`)},
+		},
+		mkLoginWithZM(),
+	})
+	ftests.Run(t, []ftests.Test{
+		{
+			"Can access private book when logged-in",
+			callURL,
+			[]any{handler, "/get/metas", &GetMetasIn{
+				Names : []string{name},
+			}, tokenStr},
+			[]any{mustParseJSON(`{ "metas" : [
+				{
+					"type": "book",
+					"name": "`+name+`",
+					"fmt":  "markdown",
+					"file": "`+path+`"
+				}
+			] }`)},
 		},
 	})
 }

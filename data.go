@@ -46,7 +46,7 @@ func SetData(db *DB, in *SetDataIn, out *SetDataOut) error {
 	return db.UpdateData(in)
 }
 
-func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
+func GetBooks(db *DB, in *GetBooksIn, out *GetBooksOut) error {
 	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
 		return err
@@ -59,8 +59,7 @@ func DataGetBooks(db *DB, in *DataGetBooksIn, out *DataGetBooksOut) error {
 	return err
 }
 
-func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) (err error) {
-	// TODO: add the configuration to our context as well
+func GetAbout(db *DB, in *GetAboutIn, out *GetAboutOut) (err error) {
 	out.Datas, err = db.GetAbouts(C.ZmId)
 	return err
 }
@@ -69,7 +68,7 @@ func DataGetAbout(db *DB, in *DataGetAboutIn, out *DataGetAboutOut) (err error) 
 // are used to download the files which will be needed for inspection.
 // This should work for anonymous users as well; when authenticated, in
 // addition to public files, we'll want to also be able to access owned files.
-func DataGetMetas(db *DB, in *DataGetMetasIn, out *DataGetMetasOut) (err error) {
+func GetMetas(db *DB, in *GetMetasIn, out *GetMetasOut) (err error) {
 	ok, uid, err := auth.CheckToken(in.Token)
 	if err != nil {
 		return err
@@ -119,8 +118,7 @@ Err:
 
 func loadContents(ds []Data) (error) {
 	for i, d := range ds {
-		// XXX dir is a CLI arg
-		xs, err := os.ReadFile(filepath.Join(dir, d.File))
+		xs, err := readDataFile(d.File)
 		if err != nil {
 			return err
 		}
@@ -155,7 +153,6 @@ func GetLicenses(db *DB, in *GetLicensesIn, out *GetLicensesOut) (err error) {
 func initData(db *DB) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// TODO: data edition field
 	// TODO: JS typing
 	// TODO: add an extra CLI parameter --dev or so, and make it so that
 	// the getCaptcha route returns the answer alongside it, so that we
@@ -164,18 +161,20 @@ func initData(db *DB) *http.ServeMux {
 		"/set/data",
 		auth.Wrap[*DB, SetDataIn, SetDataOut](db, SetData),
 	)
+
 	mux.HandleFunc(
 		"/get/books",
-		auth.Wrap[*DB, DataGetBooksIn, DataGetBooksOut](db, DataGetBooks),
+		auth.Wrap[*DB, GetBooksIn, GetBooksOut](db, GetBooks),
 	)
+
 	mux.HandleFunc(
 		"/get/about",
-		auth.Wrap[*DB, DataGetAboutIn, DataGetAboutOut](db, DataGetAbout),
+		auth.Wrap[*DB, GetAboutIn, GetAboutOut](db, GetAbout),
 	)
 
 	mux.HandleFunc(
 		"/get/metas",
-		auth.Wrap[*DB, DataGetMetasIn, DataGetMetasOut](db, DataGetMetas),
+		auth.Wrap[*DB, GetMetasIn, GetMetasOut](db, GetMetas),
 	)
 
 	mux.HandleFunc(

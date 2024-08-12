@@ -112,7 +112,7 @@ tests: js-tests go-tests
 # manually lifted.
 .PHONY: quick-site
 quick-site: typecheck config site/base/pako.min.js ./lib/enums.js \
-		site/content/about.html site/base/full.js backend
+		site/content/about.html site/base/full.js backend db-prod.sqlite
 	@echo "Re(creating) website..."
 	@rm -rf ./site-ready/
 	@mkdir ./site-ready/
@@ -167,6 +167,11 @@ ${ZM_DATA}/LICENSE.md: ./site/base/full.js
 ./lib/enums.js: ./bin/mkenumsjs.sh ./lib.d.ts
 	@echo Creating $@...
 	@sh ./bin/mkenumsjs.sh ./lib.d.ts > $@
+
+./db-prod.sqlite: ./schema.sql ./schema-user-prod.sql ./schema-values.sql
+	@echo Creating $@...
+	@rm -rf $@
+	@cat $^ | sqlite3 $@
 
 ./db-dev.sqlite: ./schema.sql ./schema-user-dev.sql ./schema-values.sql
 	@echo Creating $@...

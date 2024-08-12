@@ -129,6 +129,28 @@ First paragraph of each closed entry contains a closing statement.
 			}
 		})
 
+	See @books-metadata, @database, @backend, @ressources-fetch.
+	@dict-sources, @dict-parsing-error, @data-subdivision
+
+	We're working on a SQL database scheme in ./schema.sql and ./schema2.sql,
+	which is for now automatically injected as ./modules/db.js via ./Makefile.
+
+	We're starting to conceputalized data access so as to later be able to implement
+	various features (@multidict, @multidec, @dict-decomp-web-edition)
+
+	The database would be usefull in multiple ways:
+		- data update/fetch: we don't want to have to install node.js or similar
+		  on backend, so we'll want those things to either be Golang/Perl/Shell/whatever.
+		  More standard unix tooling.
+		- front-end access: front-end would access cached, compressed, pre-downloaded
+		  version of the data. We'll allow some special data type allowing to e.g.
+		  build a dictionary from original source + some user patches. We'll need to
+		  develop something handy to allow automatic update without impacting user
+		  patches.
+
+	If we allow user patching, update method should take ensure all
+	patches are valid before properly updating a dict.
+
 
 ## small @spa-broken-firefox
 	2024-08-03: This and a som Dom.alisten()-based features were

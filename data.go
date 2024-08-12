@@ -14,12 +14,17 @@ import (
 	"path/filepath"
 )
 
-// Simple wrapper to guard the access to dir (global)
+// Simple wrappers to guard the access to dir (global)
 func writeDataFile(fn, content string) error {
 	fpath := filepath.Join(dir, fn)
 	return writeFile(fpath, []byte(content))
 }
 
+func readDataFile(fn string) (string, error) {
+	fpath := filepath.Join(dir, fn)
+	x, err := os.ReadFile(fpath)
+	return string(x), err
+}
 
 // TODO: have per user size limits
 func SetData(db *DB, in *SetDataIn, out *SetDataOut) error {

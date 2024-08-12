@@ -160,7 +160,6 @@ func (db *DB) UpdateData(d *SetDataIn) error {
 		return tryRollback(tx, err)
 	}
 
-	// NOTE: _.LastInsertId() is a thing for some DB
 	_, err = tx.Exec(`
 		UPDATE
 			Permission
@@ -221,8 +220,8 @@ func (db *DB) AddData(d *SetDataIn) error {
 			err = fmt.Errorf("Unknown UserId")
 		}
 		if isErrConstraintUniq(err) {
-			// XXX no, it's not necessarily a d.Type
-			err = fmt.Errorf("Path '%s' already there or there's a '%s' named '%s'", d.File, d.Type, d.Name)
+			err = fmt.Errorf("Path '%s' already there"+
+				" or there's something named '%s'", d.File, d.Name)
 		}
 		return tryRollback(tx, err)
 	}
@@ -256,7 +255,6 @@ func (db *DB) AddData(d *SetDataIn) error {
 		return tryRollback(tx, err)
 	}
 
-	// TODO: untested
 	if writeDataFile(d.File, d.Content); err != nil {
 		return tryRollback(tx, err)
 	}

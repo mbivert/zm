@@ -38,6 +38,7 @@ var now int64
 var zmId = auth.UserId(1)
 var mbId = auth.UserId(2)
 var ccCEDictPath = "data/dict/cc-cedict.csv.gz"
+var ccCEDictName = "CC-CEDICT"
 var cc0Id = int64(1) // CC0 1.0 license (~public domain)
 var cc0Name = "CC0 1.0"
 
@@ -219,8 +220,9 @@ func TestUpdateData(t *testing.T) {
 	initTestDB()
 
 	path := "private/data/path"
+	path1 := "private/data/path1"
 	name := "superbuniquename"
-
+	name1 := "ookay"
 
 	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
 		return &SetDataIn{
@@ -241,9 +243,13 @@ func TestUpdateData(t *testing.T) {
 
 	data := mkd(name, path, zmId, cc0Id, true)
 
-	// TODO: test the path starting with a / or not, to be done
-	// while testing data.go.
 	ftests.Run(t, []ftests.Test{
+		{
+			"Foreign key constraint broke on unknown uid",
+			db.AddData,
+			[]any{mkd(name, path, 89, 1, false)},
+			[]any{fmt.Errorf("Unknown UserId")},
+		},
 		{
 			"Random data with okay foreign keys",
 			db.AddData,
@@ -307,7 +313,74 @@ func TestUpdateData(t *testing.T) {
 			}, nil },
 		},
 	})
-//	os.Exit(0)
+	data.Name = ccCEDictName
+	data.LicenseId = cc0Id
+	ftests.Run(t, []ftests.Test{
+		{
+			"Try updating name to an existing one",
+			db.UpdateData,
+			[]any{data},
+			[]any{fmt.Errorf("Seems there's already something named '%s'", ccCEDictName)},
+		},
+		{
+			"Add data with name1 to another user ",
+			db.AddData,
+			[]any{mkd(name1, path1, mbId, cc0Id, false)},
+			[]any{nil},
+		},
+	})
+
+	data.Name = name1
+	ftests.Run(t, []ftests.Test{
+		{
+			"Can update name to existing one, as long as it's used by someone else",
+			db.UpdateData,
+			[]any{data},
+			[]any{nil},
+		},
+	})
+
+	data.LicenseId = 4 // meh
+	data.Descr     = "whaaatever"
+	data.UrlInfo   = "https://gaagle.com"
+	data.Content   = "updated content"
+	data.Public    = false
+	data.Type      = dataTDict
+	data.Fmt       = dataFWMDecomp
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Updating many fields",
+			db.UpdateData,
+			[]any{data},
+			[]any{nil},
+		},
+		{
+			"Data correctly updated",
+			db.getDataByNameUid,
+			[]any{data.Name, data.UserId},
+			[]any{&SetDataIn{
+				Token     : "", // not set
+				Name      : data.Name,
+				Type      : data.Type,
+				Descr     : data.Descr,
+				Fmt       : data.Fmt,
+				Public    : data.Public,
+				LicenseId : data.LicenseId,
+				UrlInfo   : data.UrlInfo,
+				Content   : "", // not set
+				File      : data.File,
+				UserId    : zmId,
+				Id        : 0, // not set
+			}, nil },
+		},
+		{
+			"Content file correctly updated",
+			readDataFile,
+			[]any{data.File},
+			[]any{data.Content, nil},
+		},
+	})
 }
 
 func TestAddData(t *testing.T) {
@@ -320,6 +393,8 @@ func TestAddData(t *testing.T) {
 	name := "superbuniquename"
 //	name1 := "ooook"
 
+	content := "foo"
+
 	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
 		return &SetDataIn{
 			Token     : "x",
@@ -330,7 +405,7 @@ func TestAddData(t *testing.T) {
 			Public    : pub,
 			LicenseId : lid,
 			UrlInfo   : "x",
-			Content   : "foo",
+			Content   : content,
 			File      : path,
 			UserId    : uid,
 			Id        : -1,
@@ -390,11 +465,17 @@ func TestAddData(t *testing.T) {
 			}, nil },
 		},
 		{
+			"Content file correctly set",
+			readDataFile,
+			[]any{path},
+			[]any{content, nil},
+		},
+		{
 			"Can't add the same path twice in the DB",
 			db.AddData,
 			[]any{mkd(name, path, mbId, cc0Id, false)},
 			[]any{
-				fmt.Errorf("Path '%s' already there or there's a 'book' named '%s'", path, name),
+				fmt.Errorf("Path '%s' already there or there's something named '%s'", path, name),
 			},
 		},
 		{
@@ -408,7 +489,7 @@ func TestAddData(t *testing.T) {
 			db.AddData,
 			[]any{mkd(name, path2, zmId, cc0Id, true)},
 			[]any{
-				fmt.Errorf("Path '%s' already there or there's a 'book' named '%s'", path2, name),
+				fmt.Errorf("Path '%s' already there or there's something named '%s'", path2, name),
 			},
 		},
 		{

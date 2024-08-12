@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 	"strings"
 //	"os"
+	"errors"
+	"database/sql"
 //	"io/ioutil"
 	"net/http/httptest"
 	jwt "github.com/golang-jwt/jwt/v5"
@@ -40,7 +42,7 @@ func initDataTest() {
 	initTestDB() // see 'db_test.go:/^func initTestDB\('
 
 //	handler = http.DefaultServeMux
-	handler = initData(db)
+	handler = mkServeMux(db)
 
 	if err := auth.LoadConf("config.auth.json"); err != nil {
 		log.Fatal(err)
@@ -105,6 +107,7 @@ func callURLWithToken(handler http.Handler, url string, args any) any {
 
 	out2, ok := out.(map[string]any)
 	if !ok {
+		log.Println(out)
 		log.Fatal("Weird output")
 	}
 
@@ -135,6 +138,35 @@ func callURLWithToken(handler http.Handler, url string, args any) any {
 	return out2
 }
 
+func (db *DB) getDataByNameUidNoPath(name string, uid auth.UserId) (*SetDataIn, error) {
+	x, err := db.getDataByNameUid(name, uid)
+	if err != nil {
+		return nil, err
+	}
+	x.File = ""
+	return x, err
+}
+
+// For tests purposes only
+func (db *DB) mustGetDataIdFile(name string, uid auth.UserId) (int64, string) {
+	db.Lock()
+	defer db.Unlock()
+
+	did := int64(-1)
+	fn := ""
+
+	err := db.QueryRow(`
+		SELECT Id, File FROM Data WHERE Name = $1 AND UserID = $2
+	`, name, uid).Scan(&did, &fn)
+
+	if errors.Is(err, sql.ErrNoRows) {
+		return -1, ""
+	} else if err != nil {
+		log.Fatal(err)
+	}
+	return did, fn
+}
+
 func mustParseJSON(s string) any {
 	var x any
 	if err := json.Unmarshal([]byte(s), &x); err != nil {
@@ -143,8 +175,32 @@ func mustParseJSON(s string) any {
 	return x
 }
 
+// We're only testing what's happening locally in 'data.go:/^func SetData\(';
+// finer tests can be found in db_test.go
 func TestSetData(t *testing.T) {
 	initDataTest()
+
+	path := "private/data/path"
+
+	name := "superbuniquename"
+//	name1 := "ooook"
+
+	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
+		return &SetDataIn{
+			Token     : "x",
+			Name      : name,
+			Type      : "book",
+			Descr     : "foo",
+			Fmt       : "markdown",
+			Public    : pub,
+			LicenseId : lid,
+			UrlInfo   : "x",
+			Content   : "foo",
+			File      : path,
+			UserId    : uid,
+			Id        : -1,
+		}
+	}
 
 	ftests.Run(t, []ftests.Test{
 		{
@@ -154,6 +210,103 @@ func TestSetData(t *testing.T) {
 			[]any{map[string]any{
 				"err": "JSON decoding failure: json: cannot unmarshal string into Go value of type main.SetDataIn",
 			}},
+		},
+		{
+			"Not logged in",
+			callURL,
+			[]any{handler, "/set/data", &SetDataIn{}, ""},
+			[]any{map[string]any{
+				"err" : "Not connected!",
+			}},
+		},
+		{
+			"Valid user/password",
+			callURLWithToken,
+			[]any{handler, "/auth/login", map[string]any{
+				"login"  : "zhongmu",
+				"passwd" : "{c=!aW}4:1J~UR]j\"q|Q",
+			}},
+			[]any{map[string]any{
+				"token" : jwt.MapClaims{
+					"date" : 0,          // redacted to ease tests
+					"uniq" : "redacted", // idem
+					"uid"  : float64(zmId),
+				},
+			}},
+		},
+	})
+
+	data := mkd(name, path, zmId, cc0Id, true)
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Adding new data, connected as zm",
+			callURL,
+			[]any{handler, "/set/data", data, tokenStr},
+			[]any{mustParseJSON(`{}`)},
+		},
+		// okay, let's bypass a few things to check things out:
+		{
+			"Data correctly added",
+			db.getDataByNameUidNoPath,
+			[]any{name, zmId},
+			[]any{&SetDataIn{
+				Token     : "", // not set
+				Name      : name,
+				Type      : "book",
+				Descr     : "foo",
+				Fmt       : "markdown",
+				Public    : true,
+				LicenseId : cc0Id,
+				UrlInfo   : "x",
+				Content   : "", // not set
+				File      : "", // redacted (random)
+				UserId    : zmId,
+				Id        : 0, // not set
+			}, nil },
+		},
+	})
+	data.Id, data.File = db.mustGetDataIdFile(data.Name, data.UserId)
+	data.Name = "ookay"
+	data.LicenseId = 4 // meh
+	data.Descr     = "whaaatever"
+	data.UrlInfo   = "https://gaagle.com"
+	data.Content   = "updated content"
+	data.Public    = false
+	data.Type      = dataTDict
+	data.Fmt       = dataFWMDecomp
+
+	ftests.Run(t, []ftests.Test{
+		{
+			"Updating data, connected as zm",
+			callURL,
+			[]any{handler, "/set/data", data, tokenStr},
+			[]any{mustParseJSON(`{}`)},
+		},
+		{
+			"Data correctly updated",
+			db.getDataByNameUid,
+			[]any{data.Name, data.UserId},
+			[]any{&SetDataIn{
+				Token     : "", // not set
+				Name      : data.Name,
+				Type      : data.Type,
+				Descr     : data.Descr,
+				Fmt       : data.Fmt,
+				Public    : data.Public,
+				LicenseId : data.LicenseId,
+				UrlInfo   : data.UrlInfo,
+				Content   : "", // not set
+				File      : data.File,
+				UserId    : zmId,
+				Id        : 0, // not set
+			}, nil },
+		},
+		{
+			"Content file correctly updated",
+			readDataFile,
+			[]any{data.File},
+			[]any{data.Content, nil},
 		},
 	})
 }

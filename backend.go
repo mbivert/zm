@@ -175,27 +175,7 @@ func Signin(db *DB, in *SigninIn, out *SigninOut) error {
 	return auth.Signin(db, &in.SigninIn, &out.SigninOut)
 }
 
-func main() {
-	// Won't change
-	var s strings.Builder
-	indexPageTmpl.Execute(&s, map[string]any{
-		"root"    : C.Root,
-		"version" : C.Version,
-	})
-
-	// TODO: this should be in the Config
-	fn   := "db-dev.sqlite"
-
-	// TODO: pointer or not?
-	db, err := NewDB(fn)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if err := auth.LoadConf("config.auth.json"); err != nil {
-		log.Fatal(err)
-	}
-
+func mkServeMux(db *DB) *http.ServeMux {
 	mux := initData(db)
 
 	mux.Handle("/auth/", http.StripPrefix("/auth", auth.New(db)))
@@ -215,6 +195,12 @@ func main() {
 	mux.HandleFunc("/captcha/get", auth.Wrap[*DB, GetCaptchaIn, GetCaptchaOut](db, GetCaptcha))
 	mux.HandleFunc("/captcha/check", auth.Wrap[*DB, CheckCaptchaIn, CheckCaptchaOut](db, CheckCaptcha))
 
+	// Won't change
+	var s strings.Builder
+	indexPageTmpl.Execute(&s, map[string]any{
+		"root"    : C.Root,
+		"version" : C.Version,
+	})
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		path := filepath.Clean(r.URL.Path)
@@ -243,6 +229,26 @@ func main() {
 			http.ServeFile(w, r, fpath)
 		}
 	})
+
+	return mux
+}
+
+func main() {
+
+	// TODO: this should be in the Config
+	fn   := "db-dev.sqlite"
+
+	// TODO: pointer or not?
+	db, err := NewDB(fn)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := auth.LoadConf("config.auth.json"); err != nil {
+		log.Fatal(err)
+	}
+
+	mux := mkServeMux(db)
 
 	if usock != "" {
 		// This isn't needed on Linux thanks to the proper socket closing

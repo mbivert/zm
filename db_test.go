@@ -102,7 +102,7 @@ func (db *DB) hasDataWithName(name string) (bool, error) {
 	did := -1
 
 	err := db.QueryRow(`
-		SELECT Id FROM Data WHERE name = $1
+		SELECT Id FROM Data WHERE Name = $1
 	`, name).Scan(&did)
 
 	// Should never happen in normal circumstances

@@ -86,39 +86,6 @@ func (db *DB) CanGet(uid auth.UserId, path string) (bool, error) {
 	return public >= 1 || owner == uid, nil
 }
 
-// This is clumsy: https://github.com/mattn/go-sqlite3/issues/949
-func isErrConstraintFk(err error) bool {
-	return false
-}
-func isErrConstraintUniq(err error) bool {
-	return false
-}
-/*
-func isErrConstraintFk(err error) bool {
-	err2, ok := (err).(sqlite3.Error)
-	if ok {
-		if err2.Code == sqlite3.ErrConstraint {
-			if err2.ExtendedCode == sqlite3.ErrConstraintForeignKey {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func isErrConstraintUniq(err error) bool {
-	err2, ok := (err).(sqlite3.Error)
-	if ok {
-		if err2.Code == sqlite3.ErrConstraint {
-			if err2.ExtendedCode == sqlite3.ErrConstraintUnique {
-				return true
-			}
-		}
-	}
-	return false
-}
-*/
-
 func tryRollback(tx *sql.Tx, err error) error {
 	if err2 := tx.Rollback(); err2 != nil {
 		err = fmt.Errorf("%s, additionally, rollback failed: %s\n", err, err2)

@@ -10,8 +10,26 @@ expected implementation complexity.
 
 A small amount of old/unsorted items are located at the end of the file.
 
+# small/medium @external-use
+	An advantage of not having a backend was that the frontend was
+	quite standalone. In particular this allowed external use of
+	zhongmu as lib on random websites.
+
+	This is now broken, because the JS code always assumes the existence
+	of a backend.
+
+	We shouldn't have issues with access to $dict.csv.gz & cie because
+	the code still relies on a bare GET to get them. However, Data.init()
+	calles Data.getmetas(), which systematically attempts to POST to
+	/get/metas.
+
+	Let's see if we can find a way to create a standalone "package"
+	either from a set of parameters, or simply exporting all public
+	data.
+
 Current goals:
   - @setup-scripts
+  - @external-use
   - @flexible-view
   - bug in bin/check-data.js (script broken)
   - Kept around from previous run:

@@ -1,0 +1,19 @@
+{
+	"//"          : "How to send verification emails",
+	"SMTPServer"  : "smtp.bar.baz",
+	"SMTPPort"    : "587",
+	"AuthEmail"   : "foo@bar.baz",
+	"AuthPasswd"  : "eieieieieieieieiei",
+
+	"//"          : "Enable/disable email verification (default: disabled)",
+	"NoVerif"     : true,
+
+	"//"          : "Token lifetime",
+	"Timeout"     : 3600,
+
+	"//"          : "Secret key (not the production stuff)",
+	"HMAC"        : "nA]FB: vs=YA&+9Zsn_`:HD|Mc=FPk|7lY]fKH_,",
+
+	"//"          : "Internal stuff; read the code",
+	"LenUniq"     : 64
+}

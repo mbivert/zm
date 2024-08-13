@@ -7,6 +7,54 @@ First paragraph of each closed entry contains a closing statement.
 
 # Entries
 
+# medium @cross-compilation-issues
+	2024-08-13: For now, we're switching from github.com/mattn/go-sqlite3
+	to github.com/ncruces/go-sqlite3, as the latter doesn't rely on CGO.
+	.
+	Note also that the 404 error mentioned below was unrelated to the sqlite3
+	issues: it's likely that things would have still worked somewhat with
+	github.com/mattn/go-sqlite3, but I haven't bothered testing. The current
+	code is successfully deployed on an OpenBSD.
+
+	Deployment is currently broken because of a cross-compilation issue.
+	With CGO_ENABLED=, we can get away with it by not referencing sqlite3
+	(impact is more cryptic error messages).
+
+	But even with that, for some reasons, all requests goes to 404. This
+	may be related to the way we mux things. We need to:
+		- write a small test to pin-point the actual compilation issues
+		- write a small test to test the 404 thing
+		- setup an automated, remote OpenBSD testing environment.
+
+	Is currently deployed: 7d2297bd32137ffe2bd3bf612805c2650541d74f
+
+		$ env GOOS=openbsd GOARCH=amd64 make -B quick-site
+		Creating db-json-export.sql...
+		Creating lib/db.js...
+		Re(creating) lib/config.js...
+		Getting pako...
+		Creating lib/enums.js...
+		Building backend...
+		# command-line-arguments
+		./db.go:91:29: undefined: sqlite3.Error
+		./db.go:93:27: undefined: sqlite3.ErrConstraint
+		./db.go:94:36: undefined: sqlite3.ErrConstraintForeignKey
+		./db.go:103:29: undefined: sqlite3.Error
+		./db.go:105:27: undefined: sqlite3.ErrConstraint
+		./db.go:106:36: undefined: sqlite3.ErrConstraintUnique
+		make: *** [Makefile:131: backend] Error 1
+
+		$ env GOOS=openbsd GOARCH=amd64 CGO_ENABLED=1 make -B quick-site
+		Creating db-json-export.sql...
+		Creating lib/db.js...
+		Re(creating) lib/config.js...
+		Getting pako...
+		Creating lib/enums.js...
+		Building backend...
+		# net
+		/usr/lib/go/src/net/cgo_resold.go:20:76: cannot use _Ctype_size_t(len(b)) (value of type _Ctype_ulong) as _Ctype_uint value in argument to (_C2func_getnameinfo)
+		make: *** [Makefile:131: backend] Error 1
+
 ## medium @captcha
 	2024-08-06: Not sure how great the selected captcha lib is;
 	should be good enough to prevent automated abuse from dumb

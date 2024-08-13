@@ -14,7 +14,8 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	_ "github.com/mattn/go-sqlite3"
+//	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/ncruces/go-sqlite3"
 
 	"github.com/mbivert/auth"
 )

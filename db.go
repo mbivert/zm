@@ -22,7 +22,10 @@ import (
 	"sync"
 	"strconv"
 	"strings"
-	_ "github.com/mattn/go-sqlite3"
+//	_ "github.com/mattn/go-sqlite3"
+	sqlite3 "github.com/ncruces/go-sqlite3"
+	_ "github.com/ncruces/go-sqlite3/driver"
+	_ "github.com/ncruces/go-sqlite3/embed"
 	"testing"
 
 	"github.com/mbivert/auth"
@@ -42,6 +45,38 @@ func NewDB(path string) (*DB, error) {
 	}
 
 	return &DB{db,&sync.Mutex{}}, nil
+}
+
+// This is clumsy: https://github.com/mattn/go-sqlite3/issues/949
+// Even more so given that this doesn't cross-compile to OpenBSD.
+func isErrConstraintFk(err error) bool {
+	return errors.Is(err, sqlite3.CONSTRAINT_FOREIGNKEY)
+/*	// for github.com/mattn/go-sqlite3/
+	err2, ok := (err).(sqlite3.Error)
+	if ok {
+		if err2.Code == sqlite3.ErrConstraint {
+			if err2.ExtendedCode == sqlite3.ErrConstraintForeignKey {
+				return true
+			}
+		}
+	}
+	return false
+*/
+}
+
+func isErrConstraintUniq(err error) bool {
+	return errors.Is(err, sqlite3.CONSTRAINT_UNIQUE)
+/*	// for github.com/mattn/go-sqlite3/
+	err2, ok := (err).(sqlite3.Error)
+	if ok {
+		if err2.Code == sqlite3.ErrConstraint {
+			if err2.ExtendedCode == sqlite3.ErrConstraintUnique {
+				return true
+			}
+		}
+	}
+	return false
+*/
 }
 
 // XXX eventually, we'll want this to be cached, but for zm's purposes,
@@ -173,12 +208,12 @@ func (db *DB) AddData(d *SetDataIn) error {
 	db.Lock()
 	defer db.Unlock()
 
-	tx, err := db.Begin()
-	if err != nil {
-		return err
+	tx, err1 := db.Begin()
+	if err1 != nil {
+		return err1
 	}
 
-	err = tx.QueryRow(`
+	err := tx.QueryRow(`
 		INSERT INTO
 			Data (
 				Name, UserId, Type, Descr, File, Formatter,

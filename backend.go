@@ -34,13 +34,14 @@ import (
 var C Config
 
 // CLI parameters
-var port      string
-var usock     string
-var dir       string
-var fastcgi   bool
-var configFn  string
-var aconfigFn string
-var openbsd   bool
+var port       string
+var usock      string
+var dir        string
+var fastcgi    bool
+var confFn     string
+var authConfFn string
+var dbFn       string
+var openbsd    bool
 
 var indexPageTmpl = template.Must(template.New("").Parse(""+
 `<!DOCTYPE html>
@@ -111,17 +112,18 @@ func init() {
 	if testing.Testing() {
 		return
 	}
-	flag.StringVar(&port,     "p", ":8001",         "TCP address to listen to")
-	flag.StringVar(&dir,      "d", "./site-ready/", "HTTP root location")
-	flag.StringVar(&usock,    "u", "",              "If set, listen on unix socket over TCP port")
-	flag.BoolVar(&fastcgi,    "f", false,           "If set, use the UNIX socket and FastCGI")
-	flag.StringVar(&configFn, "c", "config.json",   "/path/to/config.json")
-	flag.StringVar(&aconfigFn, "a", "config.auth.json",   "/path/to/config.auth.json")
-	flag.BoolVar(&openbsd,    "o", false,           "Tweaks for OpenBSD")
+	flag.StringVar(&port,       "p", ":8001",            "TCP address to listen to")
+	flag.StringVar(&dir,        "d", "./site-ready/",    "HTTP root location")
+	flag.StringVar(&usock,      "u", "",                 "If set, listen on unix socket over TCP port")
+	flag.BoolVar(&fastcgi,      "f", false,              "If set, use the UNIX socket and FastCGI")
+	flag.StringVar(&confFn,     "c", "config.json",      "/path/to/config.json")
+	flag.StringVar(&authConfFn, "a", "config.auth.json", "/path/to/config.auth.json")
+	flag.StringVar(&dbFn,       "s", "db-dev.sqlite",    "/path/to/db.sqlite")
+	flag.BoolVar(&openbsd,      "o", false,              "Tweaks for OpenBSD")
 
 	flag.Parse();
 
-	if err := loadConf(configFn, &C); err != nil {
+	if err := loadConf(confFn, &C); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -236,17 +238,12 @@ func mkServeMux(db *DB) *http.ServeMux {
 }
 
 func main() {
-
-	// TODO: this should be in the Config
-	fn   := "db-dev.sqlite"
-
-	// TODO: pointer or not?
-	db, err := NewDB(fn)
+	db, err := NewDB(dbFn)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	if err := auth.LoadConf(aconfigFn); err != nil {
+	if err := auth.LoadConf(authConfFn); err != nil {
 		log.Fatal(err)
 	}
 
@@ -284,9 +281,9 @@ func main() {
 		log.Printf("Listening on unix:%s (fastcgi: %t)\n", usock, fastcgi);
 
 		if fastcgi {
-			log.Fatal(fcgi.Serve(l, nil))
+			log.Fatal(fcgi.Serve(l, mux))
 		} else {
-			log.Fatal(http.Serve(l, nil))
+			log.Fatal(http.Serve(l, mux))
 		}
 	} else {
 		log.Println("Listening on "+port)

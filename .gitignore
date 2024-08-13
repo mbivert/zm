@@ -15,3 +15,4 @@ schema-user-prod.sqlite
 db-json-export.sql
 .tests/*
 schema-user-prod.sql
+config.auth.prod.json

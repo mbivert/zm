@@ -1,11 +1,13 @@
 # HTTP root path (MUST be / terminated (at least if not /?))
-ROOT :=
+ROOT ?=
 
 # Path to a local zm-data/
 ZM_DATA := ../zm-data
 
 # Timestamp to force browser cache update on .js/.css files.
 VERSION := $(shell /bin/date '+%s')
+
+EMBEDDED ?= false
 
 # dev site HTTP port
 port = 8001
@@ -87,7 +89,7 @@ typecheck: lib.d.ts ./bin/mkshuowen.js ./bin/check-data.js \
 .PHONY: config
 config: ./bin/mkconfigjs.sh
 	@echo "Re(creating) lib/config.js..."
-	@sh ./bin/mkconfigjs.sh "${ROOT}" "${VERSION}"
+	@sh ./bin/mkconfigjs.sh "${ROOT}" "${VERSION}" "${EMBEDDED}"
 
 .PHONY: js-tests
 js-tests: typecheck ./bin/tests.js ./lib/enums.js

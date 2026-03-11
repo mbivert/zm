@@ -12,27 +12,31 @@ package main
  */
 
 import (
-	"testing"
+	"encoding/json"
 	"log"
 	"net/http"
-	"encoding/json"
 	"strings"
-//	"os"
-	"errors"
+	"testing"
+
+	//	"os"
 	"database/sql"
-//	"io/ioutil"
+	"errors"
+
+	//	"io/ioutil"
 	"net/http/httptest"
+
 	jwt "github.com/golang-jwt/jwt/v5"
-//	"encoding/base64"
-	"github.com/mbivert/ftests"
+
+	//	"encoding/base64"
 	"github.com/mbivert/auth"
+	"github.com/mbivert/ftests"
 )
 
 var handler http.Handler
 
 // ease lib update
-var errSegment = jwt.ErrTokenMalformed.Error()+": token contains an invalid number of segments"
-var errSignature = jwt.ErrTokenSignatureInvalid.Error()+": signature is invalid"
+var errSegment = jwt.ErrTokenMalformed.Error() + ": token contains an invalid number of segments"
+var errSignature = jwt.ErrTokenSignatureInvalid.Error() + ": signature is invalid"
 
 func init() {
 	if err := loadConf("config.json", &C); err != nil {
@@ -45,7 +49,7 @@ func init() {
 func initDataTest() {
 	initTestDB() // see 'db_test.go:/^func initTestDB\('
 
-//	handler = http.DefaultServeMux
+	//	handler = http.DefaultServeMux
 	handler = mkServeMux(db)
 
 	if err := auth.LoadConf("config.auth.json"); err != nil {
@@ -54,9 +58,8 @@ func initDataTest() {
 
 	// XXX/NOTE: for now, all tests require verification to be disabled.
 	// TODO: this is in auth's config
-//	C.NoVerif = true
+	//	C.NoVerif = true
 }
-
 
 func callURL(handler http.Handler, url string, args any, tok string) any {
 	ts := httptest.NewServer(handler)
@@ -67,7 +70,7 @@ func callURL(handler http.Handler, url string, args any, tok string) any {
 		log.Fatal(err)
 	}
 
-//	r, err := http.Post(ts.URL+url, "application/json", strings.NewReader(string(sargs)))
+	//	r, err := http.Post(ts.URL+url, "application/json", strings.NewReader(string(sargs)))
 
 	req, err := http.NewRequest("POST", ts.URL+url, strings.NewReader(string(sargs)))
 	if err != nil {
@@ -87,10 +90,10 @@ func callURL(handler http.Handler, url string, args any, tok string) any {
 	r, err := http.DefaultClient.Do(req)
 
 	var out any
-//	x, err := ioutil.ReadAll(r.Body)
-//	fmt.Println(string(x))
+	//	x, err := ioutil.ReadAll(r.Body)
+	//	fmt.Println(string(x))
 	err = json.NewDecoder(r.Body).Decode(&out)
-//	err = json.Unmarshal(x, &out)
+	//	err = json.Unmarshal(x, &out)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -185,14 +188,14 @@ func mkLoginWith(uname string, uid auth.UserId) ftests.Test {
 		"Valid user/password",
 		callURLWithToken,
 		[]any{handler, "/auth/login", map[string]any{
-			"login"  : uname,
-			"passwd" : "{c=!aW}4:1J~UR]j\"q|Q",
+			"login":  uname,
+			"passwd": "{c=!aW}4:1J~UR]j\"q|Q",
 		}},
 		[]any{map[string]any{
-			"token" : jwt.MapClaims{
-				"date" : 0,          // redacted to ease tests
-				"uniq" : "redacted", // idem
-				"uid"  : float64(uid),
+			"token": jwt.MapClaims{
+				"date": 0,          // redacted to ease tests
+				"uniq": "redacted", // idem
+				"uid":  float64(uid),
 			},
 		}},
 	}
@@ -212,22 +215,22 @@ func TestSetData(t *testing.T) {
 	path := "private/data/path"
 
 	name := "superbuniquename"
-//	name1 := "ooook"
+	//	name1 := "ooook"
 
 	mkd := func(name, path string, uid auth.UserId, lid int64, pub bool) *SetDataIn {
 		return &SetDataIn{
-			Token     : "x",
-			Name      : name,
-			Type      : "book",
-			Descr     : "foo",
-			Fmt       : "markdown",
-			Public    : pub,
-			LicenseId : lid,
-			UrlInfo   : "x",
-			Content   : "foo",
-			File      : path,
-			UserId    : uid,
-			Id        : -1,
+			Token:     "x",
+			Name:      name,
+			Type:      "book",
+			Descr:     "foo",
+			Fmt:       "markdown",
+			Public:    pub,
+			LicenseId: lid,
+			UrlInfo:   "x",
+			Content:   "foo",
+			File:      path,
+			UserId:    uid,
+			Id:        -1,
 		}
 	}
 
@@ -245,7 +248,7 @@ func TestSetData(t *testing.T) {
 			callURL,
 			[]any{handler, "/set/data", &SetDataIn{}, ""},
 			[]any{map[string]any{
-				"err" : "Not connected!",
+				"err": "Not connected!",
 			}},
 		},
 		mkLoginWithZM(),
@@ -266,30 +269,30 @@ func TestSetData(t *testing.T) {
 			db.getDataByNameUidNoPath,
 			[]any{name, zmId},
 			[]any{&SetDataIn{
-				Token     : "", // not set
-				Name      : name,
-				Type      : "book",
-				Descr     : "foo",
-				Fmt       : "markdown",
-				Public    : true,
-				LicenseId : cc0Id,
-				UrlInfo   : "x",
-				Content   : "", // not set
-				File      : "", // redacted (random)
-				UserId    : zmId,
-				Id        : 0, // not set
-			}, nil },
+				Token:     "", // not set
+				Name:      name,
+				Type:      "book",
+				Descr:     "foo",
+				Fmt:       "markdown",
+				Public:    true,
+				LicenseId: cc0Id,
+				UrlInfo:   "x",
+				Content:   "", // not set
+				File:      "", // redacted (random)
+				UserId:    zmId,
+				Id:        0, // not set
+			}, nil},
 		},
 	})
 	data.Id, data.File = db.mustGetDataIdFile(data.Name, data.UserId)
 	data.Name = "ookay"
 	data.LicenseId = 4 // meh
-	data.Descr     = "whaaatever"
-	data.UrlInfo   = "https://gaagle.com"
-	data.Content   = "updated content"
-	data.Public    = false
-	data.Type      = dataTDict
-	data.Fmt       = dataFWMDecomp
+	data.Descr = "whaaatever"
+	data.UrlInfo = "https://gaagle.com"
+	data.Content = "updated content"
+	data.Public = false
+	data.Type = dataTDict
+	data.Fmt = dataFWMDecomp
 
 	ftests.Run(t, []ftests.Test{
 		{
@@ -303,19 +306,19 @@ func TestSetData(t *testing.T) {
 			db.getDataByNameUid,
 			[]any{data.Name, data.UserId},
 			[]any{&SetDataIn{
-				Token     : "", // not set
-				Name      : data.Name,
-				Type      : data.Type,
-				Descr     : data.Descr,
-				Fmt       : data.Fmt,
-				Public    : data.Public,
-				LicenseId : data.LicenseId,
-				UrlInfo   : data.UrlInfo,
-				Content   : "", // not set
-				File      : data.File,
-				UserId    : zmId,
-				Id        : 0, // not set
-			}, nil },
+				Token:     "", // not set
+				Name:      data.Name,
+				Type:      data.Type,
+				Descr:     data.Descr,
+				Fmt:       data.Fmt,
+				Public:    data.Public,
+				LicenseId: data.LicenseId,
+				UrlInfo:   data.UrlInfo,
+				Content:   "", // not set
+				File:      data.File,
+				UserId:    zmId,
+				Id:        0, // not set
+			}, nil},
 		},
 		{
 			"Content file correctly updated",
@@ -343,7 +346,7 @@ func TestDataGetBooks(t *testing.T) {
 			callURL,
 			[]any{handler, "/get/books", &GetBooksIn{}, ""},
 			[]any{map[string]any{
-				"err" : "Not connected!",
+				"err": "Not connected!",
 			}},
 		},
 		mkLoginWithZM(),
@@ -718,18 +721,18 @@ func TestDataGetMetas(t *testing.T) {
 
 	mkd := func(uid auth.UserId, lid int64, pub bool) *SetDataIn {
 		return &SetDataIn{
-			Token     : "x",
-			Name      : name,
-			Type      : "book",
-			Descr     : "foo",
-			Fmt       : "markdown",
-			Public    : pub,
-			LicenseId : lid,
-			UrlInfo   : "x",
-			Content   : "foo",
-			File      : path,
-			UserId    : uid,
-			Id        : -1,
+			Token:     "x",
+			Name:      name,
+			Type:      "book",
+			Descr:     "foo",
+			Fmt:       "markdown",
+			Public:    pub,
+			LicenseId: lid,
+			UrlInfo:   "x",
+			Content:   "foo",
+			File:      path,
+			UserId:    uid,
+			Id:        -1,
 		}
 	}
 
@@ -748,7 +751,7 @@ func TestDataGetMetas(t *testing.T) {
 			"Not logged in: can access (literal) nothing",
 			callURL,
 			[]any{handler, "/get/metas", &GetMetasIn{
-				Names : []string{},
+				Names: []string{},
 			}, ""},
 			[]any{mustParseJSON(`{
         		"metas": []
@@ -758,7 +761,7 @@ func TestDataGetMetas(t *testing.T) {
 			"Not logged in: can access public books",
 			callURL,
 			[]any{handler, "/get/metas", &GetMetasIn{
-				Names : []string{"Shuowen Jiezi, book (Wikisource)"},
+				Names: []string{"Shuowen Jiezi, book (Wikisource)"},
 			}, ""},
 			[]any{mustParseJSON(`{
         		"metas": [
@@ -781,7 +784,7 @@ func TestDataGetMetas(t *testing.T) {
 			"Not logged in: can't access private book",
 			callURL,
 			[]any{handler, "/get/metas", &GetMetasIn{
-				Names : []string{name},
+				Names: []string{name},
 			}, ""},
 			[]any{mustParseJSON(`{ "metas" : [] }`)},
 		},
@@ -792,14 +795,14 @@ func TestDataGetMetas(t *testing.T) {
 			"Can access private book when logged-in",
 			callURL,
 			[]any{handler, "/get/metas", &GetMetasIn{
-				Names : []string{name},
+				Names: []string{name},
 			}, tokenStr},
 			[]any{mustParseJSON(`{ "metas" : [
 				{
 					"type": "book",
-					"name": "`+name+`",
+					"name": "` + name + `",
 					"fmt":  "markdown",
-					"file": "`+path+`"
+					"file": "` + path + `"
 				}
 			] }`)},
 		},
@@ -867,7 +870,7 @@ func TestDataGetLicenses(t *testing.T) {
 		       			}
 		       		]
 		       	}`),
-	       	},
+			},
 		},
 	})
 }

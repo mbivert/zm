@@ -6,9 +6,10 @@ set -e
 
 ROOT="$1"
 VERSION="$2"
+EMBEDDED="$3"
 
-if [ -z "$2" ]; then
-	echo "$(basename $0) <ROOT> <VERSION>" 1>&2
+if [ -z "$3" ]; then
+	echo "$(basename $0) <ROOT> <VERSION> <EMBEDDED>" 1>&2
 	exit 1
 fi
 
@@ -19,10 +20,13 @@ let Config = (function() {
 
 return {
 	/** @type{string} */
-	"root"    : "$ROOT",
+	"root"     : "$ROOT",
 
 	/** @type{number} */
-	"version" : $VERSION,
+	"version"  : $VERSION,
+
+	/** @type{boolean} */
+	"embedded" : $EMBEDDED,
 };
 
 })();
@@ -31,7 +35,8 @@ EOF
 f="$(dirname $0)/../config.json"
 cat << EOF > "$f"
 {
-	"root"    : "$ROOT",
-	"version" : "$VERSION"
+	"root"     : "$ROOT",
+	"version"  : "$VERSION",
+	"embedded" : $EMBEDDED
 }
 EOF

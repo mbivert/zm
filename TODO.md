@@ -58,6 +58,17 @@ Major bugs:
 
 Minor bugs
   - +來說 来说 [lai2 shuo1] /concerning, about/ no italics
+  - https://zhongmu.eu/trbook.html#c=1;w=2;b=san-zi-jing
+  	decompose character, move to the next one, go back to previous
+  	character: see a [+] instead of a [-] (character still decomposed though)
+  - no state memorization when moving back and forth from
+    a zhongwen (sub-inspection).
+  - dependency of mouse position for arrow movement is annoying, perhaps
+    we could send events to the Chinese text bits being the closest to
+    the pointer?
+
+Others:
+	- would be nice to have periods for old character forms
 
 Major internal reworks:
   - @better-cut
